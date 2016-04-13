@@ -6,14 +6,41 @@
 #include <cppunit/ui/text/TestRunner.h>
 #include <cppunit/extensions/HelperMacros.h>
 
-#include "memorytest.h"
-#include "memorypooltest.h"
+#include "linearmemorypooltest.h"
+#include "blockedmemorypooltest.h"
+#include "mysqlconnectortest.h"
+
+#include <spdlog/spdlog.h>
 
 using std::cout;
 using std::endl;
+using std::cerr;
 
 int main(int argc, char* argv[])
 {
+    try {
+        std::vector<spdlog::sink_ptr> sinks;
+        sinks.push_back(std::make_shared<spdlog::sinks::stdout_sink_st>());
+        spdlog::set_level(spdlog::level::debug);
+        // if new logger required, must add to here!
+        const char *loglist[] = {
+            "main",
+            "ClientConnection",
+            "ServerListener",
+            "LinearMemoryPool",
+            "BlockedMemoryPool",
+            "UserSession",
+            ""
+        };
+        for (int i = 0; strcmp("", loglist[i]) != 0; i++) {
+            auto combined_logger = std::make_shared<spdlog::logger>(loglist[i], begin(sinks), end(sinks));
+            combined_logger->set_level(spdlog::level::debug);
+            spdlog::register_logger(combined_logger);
+        }
+    } catch (const spdlog::spdlog_ex& ex) {
+        cerr << "Log failed: " << ex.what() << endl;
+    }
+
     // Get the top level suite from the registry
     CppUnit::Test *suite = CppUnit::TestFactoryRegistry::getRegistry().makeTest();
 

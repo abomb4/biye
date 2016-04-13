@@ -12,9 +12,11 @@ using std::cout;
 using std::endl;
 using std::cerr;
 
-MysqlConnector MysqlConnector::s_instance;
+MysqlConnector *MysqlConnector::s_instance = nullptr;
 
-MysqlConnector &MysqlConnector::getInstance() {
+MysqlConnector *MysqlConnector::getInstance() {
+    if (s_instance == nullptr)
+        s_instance = new MysqlConnector();
     return s_instance;
 }
 

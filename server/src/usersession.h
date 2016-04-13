@@ -3,6 +3,7 @@
 
 #include <map>
 
+#include "blockedmemorypool.h"
 #include "user.h"
 #include "clientconnection.h"
 
@@ -13,21 +14,28 @@ using std::map;
 class UserSession
 {
 public:
-    static UserSession *getSession(unsigned int id);
-    static bool createSession(ClientConnection *con, User *user);
-    static bool destroySession(unsigned int id);
+    static UserSession *getSessionByUid(unsigned int id);
+    static UserSession *getSessionBySockFd(int id);
+    static bool createSession(ClientConnection *con, const User user);
+    static bool destroySessionByUid(unsigned int id, bool destroy_connection);
+    static bool destroySessionBySockFd(int id, bool destroy_connection);
 
     // destruct method dont free *_connection
     ~UserSession();
 
-    const User *user() const;
+    const User user() const { return this->_user; }
+    const ClientConnection *connection() const { return this->_connection; }
 
 private:
-    static map<unsigned int, UserSession*> _sessions;
+    static map<unsigned int, UserSession*> _uid_session_map;
+    static map<int, UserSession*> _sockfd_session_map;
 
-    UserSession(ClientConnection *con, User *u);
-    ClientConnection *_connection;
-    const User *_user;
+    static BlockedMemoryPool *_pool;
+
+    UserSession(ClientConnection *con, const User u);
+
+    ClientConnection *_connection; // pointer to obj
+    User _user;
 };
 
 #endif // USERSESSION_H

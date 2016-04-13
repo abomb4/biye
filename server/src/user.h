@@ -12,18 +12,19 @@ class User
 {
 public:
     User();
+    User(const User &u);
 
-    const unsigned int id() const;
-    User& id(const unsigned int newId);
+    const uint32_t id() const;
+    void id(const uint32_t newId);
 
     const string& name() const;
-    User& name(const string& newName);
+    void name(const string& newName);
 
     const string& password() const;
-    User& password(const string& newPassword);
+    void password(const string& newPassword);
 
 private:
-    unsigned int _id;
+    uint32_t _id;
     string _name;
     string _password;
 };

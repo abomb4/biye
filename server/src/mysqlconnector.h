@@ -17,7 +17,7 @@ class MysqlConnector
 {
 public:
     // Get singleton class instance
-    static MysqlConnector &getInstance();
+    static MysqlConnector *getInstance();
     ~MysqlConnector();
 
     ///
@@ -25,7 +25,7 @@ public:
     ///
     mysqlpp::Connection *getConnection();
 private:
-    static MysqlConnector s_instance;
+    static MysqlConnector *s_instance;
 
     MysqlConnector();
 

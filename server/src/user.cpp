@@ -1,18 +1,21 @@
 #include "user.h"
 
-User::User()
-{
+User::User() {
     this->_id = 0;
 }
-
+User::User(const User &u) {
+    this->_id = u.id();
+    this->_name = u.name();
+    this->_password = u.password();
+}
 
 //  members variables g/setter //
 
-const unsigned int User::id() const { return this->_id; }
-User& User::id(const unsigned int newId) { this->_id = newId; return *this;}
+const uint32_t User::id() const { return this->_id; }
+void User::id(const uint32_t newId) { this->_id = newId;}
 
 const string& User::name() const { return this->_name; }
-User& User::name(const string& newName) { this->_name = newName; return *this;}
+void User::name(const string& newName) { this->_name = newName;}
 
 const string &User::password() const { return this->_password; }
-User& User::password(const string& newPassword) { this->_password = newPassword; return *this;}
+void User::password(const string& newPassword) { this->_password = newPassword;}

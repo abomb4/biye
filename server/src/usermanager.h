@@ -13,7 +13,7 @@ public:
     static UserManager &getInstance();
 
     // login
-    bool login(User u);
+    bool login(const char *name, const char *password);
 
     // modify by id
     bool modify(User u);

@@ -5,32 +5,44 @@
 #include <thread> // C++11
 
 #include "fxmessage.h"
-#include "usersession.h"
+using namespace FxChat;
 
-class UserSession;
+#include "memorypool.h"
+
+#include <spdlog/spdlog.h>
 
 class ClientConnection
 {
 public:
-    ClientConnection(int sockfd);
+    ClientConnection(int sockfd, int poolsize, char *poolObjMemory);
     ~ClientConnection();
-    void startListener();
 
+    void setRestoreFunc(void (*func)(char *));
+
+    MemoryPool *pool() { return this->_pool; }
+    const int sockfd() const { return this->_sockfd; }
+
+    void startListener();
 private:
+    static std::shared_ptr<spdlog::logger> _logger;
     int _sockfd; // socket
     std::thread _listener_t;
-
-    // session pointer
-    const UserSession *_session;
+    std::mutex _send_mutex;
 
     // start listener thread, will do 'delete(this)' at end
     void _doListen();
 
-    // parse msg, caller should call delete manually
-    FxMessage *_doParse();
+    // parse msg
+    FxChatError _doParse(const char *buffer_8, FxMessage *&msg);
 
     // send msg
-    void _doSend(const FxMessage *x);
+    void _doSend(FxMessage *x);
+
+    // default pool
+    MemoryPool *_pool;
+
+    // restore memory
+    void (*_restore)(char *addr);
 };
 
 #endif // CLIENTCONNECTION_H

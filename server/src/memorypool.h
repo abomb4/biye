@@ -6,8 +6,9 @@
 class MemoryPool
 {
 public:
-    virtual Memory borrow() = 0;
-    virtual void restore(Memory &m) = 0;
+    virtual char* borrow(int size) = 0; // UNABLE TO FREE/DELETE BORROWED MEMORY!
+    virtual void restore(char *addr) = 0;
+    virtual void clear() = 0; // CLEAR IS NOT DELETE! ONLY initialize!
 };
 
 #endif // MEMORYPOOL_H

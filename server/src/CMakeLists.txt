@@ -23,19 +23,27 @@ find_library(MYSQLPP_LIBRARIES NAMES mysqlpp
     )
 
 # include list
+include_directories(./include)
+add_library(spdlog INTERFACE)
+target_include_directories(
+    spdlog
+    INTERFACE
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>"
+    "$<INSTALL_INTERFACE:include>"
+)
 
 # Source list
-add_library(FXMemoryPool memorypool.h blockedmemorypool.cpp memory.h)
-add_library(FxMysqlConnector mysqlconnectionpool.cpp mysqlconnector.cpp)
+add_library(libFxBase config.cpp)
+add_library(libFXMemoryPool memorypool.h memory.h blockedmemorypool.cpp linearmemorypool.cpp)
+add_library(libFxMysqlConnector mysqlconnectionpool.cpp mysqlconnector.cpp)
+add_library(libFxChatServer fxmessage.cpp fxserver.cpp)
 set(srclist
-    config.cpp
     main.cpp
     serverlistener.cpp
     clientconnection.cpp
     usermanager.cpp
     user.cpp
     usersession.cpp
-    fxmessage.cpp
     )
 
 add_executable(fxserver ${srclist})
@@ -44,8 +52,10 @@ target_link_libraries (fxserver ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries (fxserver ${MYSQL_LIBRARIES})
 target_link_libraries (fxserver ${MYSQLPP_LIBRARIES})
 
-target_link_libraries (fxserver FXMemoryPool)
-target_link_libraries (fxserver FxMysqlConnector)
+target_link_libraries (fxserver libFxBase)
+target_link_libraries (fxserver libFXMemoryPool)
+target_link_libraries (fxserver libFxMysqlConnector)
+target_link_libraries (fxserver libFxChatServer)
 
 # utils
 add_subdirectory(fxutils)

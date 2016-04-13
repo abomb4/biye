@@ -21,13 +21,13 @@ UserManager &UserManager::getInstance() {
     return *s_instance;
 }
 
-bool UserManager::login(User u) {
-    mysqlpp::Connection *con = MysqlConnector::getInstance().getConnection();
+bool UserManager::login(const char *username, const char *password) {
+    mysqlpp::Connection *con = MysqlConnector::getInstance()->getConnection();
     mysqlpp::Query q = con->query();
     q << "select id, name, password, email from user where name = %0q and password = %1q";
     q.parse();
     try {
-        mysqlpp::StoreQueryResult res = q.store(u.name(), u.password());
+        mysqlpp::StoreQueryResult res = q.store(username, password);
         if (res.size() < 1) {
             return false;
         } else {
