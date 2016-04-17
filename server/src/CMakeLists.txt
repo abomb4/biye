@@ -34,7 +34,7 @@ target_include_directories(
 
 # Source list
 add_library(libFxBase config.cpp)
-add_library(libFXMemoryPool memorypool.h memory.h blockedmemorypool.cpp linearmemorypool.cpp)
+add_library(libFXMemoryPool memorypool.h blockedmemorypool.cpp linearmemorypool.cpp)
 add_library(libFxMysqlConnector mysqlconnectionpool.cpp mysqlconnector.cpp)
 add_library(libFxChatServer fxmessage.cpp fxserver.cpp)
 set(srclist

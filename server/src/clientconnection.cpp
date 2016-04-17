@@ -77,7 +77,6 @@ void ClientConnection::_doListen() {
             if (err != FxChatError::FXM_SUCCESS) { // wrong
                 FxServer::makeFailureMsg(returnMsg, err, this->_pool, 0);
             } else {
-
                 // LETS DO OPERATION!
                 FxChatError err = FxServer::doOperation(returnMsg, recieveMsg, this);
                 if (err != FxChatError::FXM_SUCCESS) {

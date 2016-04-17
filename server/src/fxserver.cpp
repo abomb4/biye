@@ -118,6 +118,7 @@ void _set_to_login_pack(login_pack *&pack, const char *name, const char *val) {
 }
 
 FxChatError _login(FxMessage *&retmsg, const FxMessage *msg, ClientConnection *c) {
+    _logger()->debug("({}) do login", (void*)c);
     MemoryPool *pool = c->pool();
 
     login_pack *pack = new (pool->borrow(sizeof(login_pack))) login_pack;

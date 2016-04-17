@@ -21,9 +21,12 @@ public:
     ~MysqlConnector();
 
     ///
-    /// \brief Get connection instance, DO NOT DELETE THE POINTER
+    /// \brief Get connection instance, MUST RELEASE IT AFTER FINISH
     ///
     mysqlpp::Connection *getConnection();
+
+    void release(const mysqlpp::Connection* pc);
+
 private:
     static MysqlConnector *s_instance;
 

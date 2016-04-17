@@ -4,7 +4,9 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
+QT       += core gui network
+
+CONFIG += c++11
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -12,9 +14,33 @@ TARGET = FXChat_Client
 TEMPLATE = app
 
 
-SOURCES += main.cpp\
-        mainwindow.cpp
+SOURCES += main.cpp \
+    ui/login.cpp \
+    ui/mainwindow.cpp \
+    ui/settings.cpp \
+    ui/chatingwindow.cpp \
+    fxclient.cpp \
+    fxmessage.cpp \
+    linearmemorypool.cpp \
+    fxconnection.cpp \
+    config.cpp
 
-HEADERS  += mainwindow.h
+HEADERS  += \
+    ui/login.h \
+    ui/mainwindow.h \
+    ui/settings.h \
+    ui/chatingwindow.h \
+    fxclient.h \
+    fxmessage.h \
+    linearmemorypool.h \
+    memorypool.h \
+    fxconnection.h \
+    config.h
 
-FORMS    += mainwindow.ui
+FORMS    += ui/login.ui \
+    ui/mainwindow.ui \
+    ui/settings.ui \
+    ui/chatingwindow.ui
+
+DISTFILES += \
+    default.cfg

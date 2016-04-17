@@ -46,3 +46,7 @@ mysqlpp::Connection *MysqlConnector::getConnection() {
     // direct get from connection pool
     return this->pool->grab();
 }
+
+void MysqlConnector::release(const mysqlpp::Connection* pc) {
+    this->pool->release(pc);
+}
