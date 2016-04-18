@@ -6,10 +6,7 @@
 #include "linearmemorypool.h"
 #include "config.h"
 
-#include <iostream>
-using namespace std;
-
-QMutex __connections_vector_using__;
+QMutex FxConnection::__connections_vector_using__;
 
 // static
 QVector<FxConnection*> FxConnection::_connections;
@@ -50,23 +47,35 @@ void FxConnection::_remove_connection_reg(FxConnection *c) {
 }
 
 // non static
-FxConnection::FxConnection(const QString host, const short port) {
+FxConnection::FxConnection(const QString &host, const short &port, bool connects) {
+    this->_host = host;
+    this->_port = port;
     this->_pool = new LinearMemoryPool(FX_CONNECTION_POOL_SIZE);
     this->_socket = new QTcpSocket();
-    this->_socket->connectToHost(host, port);
-
+    connect(this->_socket, SIGNAL(connected()), this, SLOT(__connected_slot()));
+    connect(this->_socket, SIGNAL(disconnected()), this, SLOT(__disconnected_slot()));
     this->created();
+    if (connects)
+        this->_socket->connectToHost(this->_host, this->_port);
 
     FxConnection::_new_connection_reg(this);
 }
 
 FxConnection::~FxConnection() {
     FxConnection::_remove_connection_reg(this);
-    this->destoried();
+    disconnect(this->_socket, SIGNAL(connected()), this, SLOT(__connected_slot()));
+    disconnect(this->_socket, SIGNAL(disconnected()), this, SLOT(__disconnected_slot()));
+    this->_socket->close();
     delete this->_socket;
+    delete this->_pool;
+    this->destoried();
 }
 
-
+///
+/// \brief FxConnection::recieve 接收一个message
+/// \param msgbuff
+/// \return
+///
 FxChatError FxConnection::recieve(FxMessage *&msgbuff) {
     char *buffer = this->_pool->borrow(8);
     bzero(buffer, 8);
@@ -85,12 +94,15 @@ FxChatError FxConnection::recieve(FxMessage *&msgbuff) {
     }
 }
 
+///
+/// \brief FxConnection::send 发送一个message
+/// \param x
+/// \return
+///
 FxChatError FxConnection::send(const FxMessage *x) {
     int buffer_length = x->needBufferSize();
     char *buffer = this->_pool->borrow(buffer_length);
     if (!x->toCharStr(buffer, buffer_length)) {
-        // ERROR convert FxMesasge to char str
-        int n = this->_socket->write("failed to build msg", 19);
         return FxChatError::FXM_PARSE_FAIL;
     } else {
         int n = 0;
@@ -102,16 +114,19 @@ FxChatError FxConnection::send(const FxMessage *x) {
     return FxChatError::FXM_SUCCESS;
 }
 
-void FxConnection::startReadThread() {
-
-}
-
 char *FxConnection::borrowFromPool(int size) {
     return this->_pool->borrow(size);
 }
 
 void FxConnection::clearPool() {
+    this->_pool->clear();
+}
+LinearMemoryPool *FxConnection::getPool() {
+    return this->_pool;
+}
 
+void FxConnection::connectToHost() {
+    this->_socket->connectToHost(this->_host, this->_port);
 }
 
 // private
@@ -144,7 +159,6 @@ FxChatError FxConnection::_doParse(const char *buffer_8, FxMessage *&msg) {
     while(need > 0) {
         n = this->_socket->read(msg_body_buff + msg_body_length - need, msg_body_length);
         if (n < 0) {
-            cout << this->_socket->error() << endl;
             return FxChatError::FXM_SOCKET_ERR;
         } else if (n == 0) {
             return FxChatError::FXM_SOCKET_ERR;

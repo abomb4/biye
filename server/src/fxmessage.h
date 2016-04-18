@@ -66,13 +66,15 @@ private:
     void _append(char *&buffer_c, const char *src, int length);
 };
 enum FxChatError : uint16_t {
-    FXM_SUCCESS = 0,
-    FXM_SOCKET_ERR = 1,
-    FXM_MSG_TOO_SHORT = 2,
-    FXM_PARSE_FAIL = 3,
-    FXM_MSG_TOO_LONG = 4,
-    FXM_UNKNOWN_FNO = 5,
-    FXM_PAREMETER_CHECK_FAIL = 6,
+    FXM_SUCCESS                 = 0,
+    FXM_FAIL                    = 1,
+    FXM_SOCKET_ERR              = 2,
+    FXM_MSG_TOO_SHORT           = 3,
+    FXM_PARSE_FAIL              = 4,
+    FXM_MSG_TOO_LONG            = 5,
+    FXM_UNKNOWN_FNO             = 6,
+    FXM_PAREMETER_CHECK_FAIL    = 7,
+    FXM_TIME_OUT                = 8,
 };
 
 }

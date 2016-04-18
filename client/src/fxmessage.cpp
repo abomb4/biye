@@ -69,9 +69,9 @@ void FxMessage::addParam(FxMessageParam *addr) {
     this->_bodylength += addr->l_name + addr->l_val + 2;  // 2 is ':' and '\n'
 }
 void FxMessage::fromUser(uint32_t uid) { this->_from_user = uid; }
-const uint32_t FxMessage::fromUser() const { return this->_from_user; }
+uint32_t FxMessage::fromUser() const { return this->_from_user; }
 void FxMessage::fno(uint16_t fno) { this->_fno = fno; }
-const uint16_t FxMessage::fno() const { return this->_fno; }
+uint16_t FxMessage::fno() const { return this->_fno; }
 
 int FxMessage::needBufferSize() const {
     return this->_bodylength + sizeof(_bodylength) + sizeof(_from_user) + sizeof(_fno);

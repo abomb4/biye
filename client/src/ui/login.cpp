@@ -18,12 +18,14 @@ Login::~Login() {
 
 // slot, when btn_login clicked
 void Login::_do_login() {
-    this->ui->lbl_errmsg->setText(QString::asprintf(""));
+    this->ui->lbl_errmsg->setText(QString::asprintf("00000"));
     QString name = this->ui->edt_name->text();
     QString password = this->ui->edt_password->text();
 
     FxChatError e = FxClient::login(&name, &password);
     if (e == FxChatError::FXM_SUCCESS) {
+    } else {
+
     }
     this->ui->lbl_errmsg->setText(QString::asprintf("%d", e));
 }
