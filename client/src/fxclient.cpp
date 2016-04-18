@@ -28,7 +28,7 @@ FxChatError FxClient::login(const QString *name, const QString *password) {
     FxConnection *c = FxConnection::getServerConnection();
     c->lock();
     FxMessage *msg = new (c->borrowFromPool(sizeof(FxMessage))) FxMessage();
-    msg->fno(FxFunction::Login);
+    msg->fno(FxFunction::FXF_Login);
     FxMessageParam *param_tmp;
     // username
     {

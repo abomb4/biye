@@ -10,7 +10,6 @@ namespace FxClient {
 
 FxChatError login(const QString *name, const QString *password);
 
-
 }
 }
 

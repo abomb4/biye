@@ -9,12 +9,12 @@
 namespace FxChat {
 
 enum FxFunction : uint16_t {
-    REPLAY = 0,
-    Login = 1,
-    GetUserList = 2,
-    ChangePassword = 3,
-    GetUserDetail = 4,
-    SendMessage = 5
+    FXF_REPLAY = 0,
+    FXF_Login = 1,
+    FXF_GetUserList = 2,
+    FXF_ChangePassword = 3,
+    FXF_GetUserDetail = 4,
+    FXF_SendMessage = 5
 };
 
 class FxMessageParam {
