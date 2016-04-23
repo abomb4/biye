@@ -16,6 +16,11 @@ public:
     ~MainWindow();
     void initData();
 
+public slots:
+    void closeApp();
+    void askClostApp();
+    void aboutQt();
+
 private:
     Ui::MainWindow *ui;
 };

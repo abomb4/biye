@@ -1,1 +1,10 @@
-<RCC/>
+<RCC>
+    <qresource prefix="/">
+        <file>ui/icons/application-exit.svg</file>
+        <file>ui/icons/configure-shortcuts.svg</file>
+        <file>ui/icons/im-user.svg</file>
+        <file>ui/icons/im-kick-user.svg</file>
+        <file>ui/icons/im-user-online.svg</file>
+        <file>images/headicon.png</file>
+    </qresource>
+</RCC>

@@ -23,7 +23,8 @@ SOURCES += main.cpp \
     fxmessage.cpp \
     linearmemorypool.cpp \
     fxconnection.cpp \
-    config.cpp
+    config.cpp \
+    clientdb.cpp
 
 HEADERS  += \
     ui/login.h \
@@ -35,7 +36,8 @@ HEADERS  += \
     linearmemorypool.h \
     memorypool.h \
     fxconnection.h \
-    config.h
+    config.h \
+    clientdb.h
 
 FORMS    += ui/login.ui \
     ui/mainwindow.ui \
@@ -44,3 +46,6 @@ FORMS    += ui/login.ui \
 
 DISTFILES += \
     default.cfg
+
+RESOURCES += \
+    icons.qrc
