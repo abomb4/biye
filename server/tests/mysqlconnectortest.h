@@ -35,7 +35,7 @@ public:
         mysqlpp::Query q = con->query();
         q << "select id, name, password, email from user where name = %0q and password = %1q";
         q.parse();
-        mysqlpp::StoreQueryResult res = q.store("x4x", "cao123");
+        mysqlpp::StoreQueryResult res = q.store("test1", "12341234");
         CPPUNIT_ASSERT(res.size() == 1);
         mysqlpp::Row row = res[0];
         cout << "id: " << row[0]

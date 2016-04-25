@@ -14,12 +14,14 @@
 
 using std::cout;
 using std::endl;
+using std::cerr;
 
 class LinearMemoryPoolTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE( LinearMemoryPoolTest );
     CPPUNIT_TEST( testBorrow );
     CPPUNIT_TEST( testOutedBorrow );
+    CPPUNIT_TEST( testBigBorrow );
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -57,6 +59,14 @@ public:
         char *b = _pool->borrow(32);
         CPPUNIT_ASSERT(abs(b - a) > 1024);
         delete (LinearMemoryPool*)_pool;
+    }
+    void testBigBorrow() {
+        MemoryPool *_pool = new LinearMemoryPool(32);
+        cout << "---------------------------------------WILL CREATE 112 SIZE" << endl;
+        _pool->borrow(80);
+        cout << "---------------------------------------WILL CREATE 80 SIZE" << endl;
+        _pool->borrow(48);
+        _pool->clear();
     }
 
 private:

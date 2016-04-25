@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.0)
 enable_testing()
 
 # C++ 11
@@ -24,6 +24,8 @@ add_library( FXTESTS STATIC
     blockedmemorypooltest.h
     mysqlconnectortest.h
     spdlogtest.h
+    fxcjsontest.h
+    usermanagertest.h
 )
 set_target_properties(FXTESTS PROPERTIES LINKER_LANGUAGE CXX)
 
@@ -32,8 +34,6 @@ target_link_libraries (test_main ${CMAKE_THREAD_LIBS_INIT})
 
 target_link_libraries(test_main ${CPPUNIT_LIBRARIES})
 target_link_libraries(test_main ${MYSQLPP_LIBRARIES})
-target_link_libraries(test_main libFXMemoryPool)
-target_link_libraries(test_main libFxBase)
-target_link_libraries(test_main libFxMysqlConnector)
 
+target_link_libraries (test_main libFxServer)
 add_test(memory_test test_main)

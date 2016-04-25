@@ -10,7 +10,8 @@ int main(int argc, char *argv[])
     // load config
     if (!Config::load("default.cfg")) {
         qDebug() << "NO CONFIG!";
-        QMessageBox::warning(NULL, "错误", "没有找到配置文件default.cfg，请检查客户端是否完整", QMessageBox::Ok, QMessageBox::Ok);
+        QMessageBox::warning(NULL, "错误", "没有找到配置文件default.cfg，请检查客户端是否完整",
+                             QMessageBox::Ok, QMessageBox::Ok);
         exit(1);
     }
 

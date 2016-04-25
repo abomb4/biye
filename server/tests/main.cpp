@@ -9,6 +9,9 @@
 #include "linearmemorypooltest.h"
 #include "blockedmemorypooltest.h"
 #include "mysqlconnectortest.h"
+//#include "spdlogtest.h"
+#include "fxcjsontest.h"
+#include "usermanagertest.h"
 
 #include <spdlog/spdlog.h>
 
@@ -19,9 +22,10 @@ using std::cerr;
 int main(int argc, char* argv[])
 {
     try {
+        spdlog::level::level_enum level = spdlog::level::info;
         std::vector<spdlog::sink_ptr> sinks;
         sinks.push_back(std::make_shared<spdlog::sinks::stdout_sink_st>());
-        spdlog::set_level(spdlog::level::debug);
+        spdlog::set_level(level);
         // if new logger required, must add to here!
         const char *loglist[] = {
             "main",
@@ -34,7 +38,7 @@ int main(int argc, char* argv[])
         };
         for (int i = 0; strcmp("", loglist[i]) != 0; i++) {
             auto combined_logger = std::make_shared<spdlog::logger>(loglist[i], begin(sinks), end(sinks));
-            combined_logger->set_level(spdlog::level::debug);
+            combined_logger->set_level(level);
             spdlog::register_logger(combined_logger);
         }
     } catch (const spdlog::spdlog_ex& ex) {

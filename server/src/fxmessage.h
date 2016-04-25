@@ -4,17 +4,21 @@
 #include <cstdint>
 #include "memorypool.h"
 
-#define MAX_FXMESSAGE_SIZE 2048
+#define FXMESSAGE_BLOCK_SIZE 32768
+#define FXMESSAGE_BLOCK_MAX  128
 
 namespace FxChat {
 
 enum FxFunction : uint16_t {
-    REPLAY = 0,
-    Login = 1,
-    GetUserList = 2,
-    ChangePassword = 3,
-    GetUserDetail = 4,
-    SendMessage = 5
+    FXF_REPLAY = 0,
+    FXF_Login = 1,
+    FXF_GetUserListFull = 2,
+    FXF_GetUserListDiff = 3,
+    FXF_GetDepartemntListFull = 4,
+    FXF_GetDepartmentListDiff = 5,
+    FXF_GetOnlineUsers = 6,
+    FXF_GetUserDetail = 7,
+    FXF_SendMessage = 8
 };
 
 class FxMessageParam {
@@ -42,28 +46,22 @@ public:
     ~FxMessage();
 
     // getter setter
-    void fromUser(uint32_t uid);
-    const uint32_t fromUser() const;
     void fno(uint16_t uid);
     const uint16_t fno() const;
     const FxMessageParam* paramList() const { return this->_body_list; }
 
     void addParam(FxMessageParam *addr);
 
-    int needBufferSize();
+    uint32_t bodyLength() const;
 
-    // NEED needBufferSize() byte memory !!!
-    bool toCharStr(char *buffer, int length);
+    // NEED bodyLength() byte memory !!!
+    bool bodyStr(char *buffer, int length);
 
 private:
-    uint16_t _bodylength;
-    uint32_t _from_user;
+    uint16_t __bodylength;
     uint16_t _fno;
     FxMessageParam *_body_list; // link list
     FxMessageParam *__list_current; // link list current
-
-    // for toCharStr write buffer
-    void _append(char *&buffer_c, const char *src, int length);
 };
 enum FxChatError : uint16_t {
     FXM_SUCCESS                 = 0,

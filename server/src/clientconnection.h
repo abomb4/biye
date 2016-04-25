@@ -32,8 +32,11 @@ private:
     // start listener thread, will do 'delete(this)' at end
     void _doListen();
 
-    // parse msg
-    FxChatError _doParse(const char *buffer_8, FxMessage *&msg);
+    // read a full msg string
+    FxChatError _doRead(char *&body, uint32_t &bodylength, uint16_t &fno, bool isrecursion = false);
+
+    // parse
+    FxChatError _doParse(char *body, uint32_t &bodylength, uint16_t &fno, FxMessage *&msg);
 
     // send msg
     void _doSend(FxMessage *x);

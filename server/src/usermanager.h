@@ -1,10 +1,8 @@
 #ifndef USERMANAGER_H
 #define USERMANAGER_H
 
-#include <vector>
 #include "user.h"
-
-using std::vector;
+#include "memorypool.h"
 
 class UserManager
 {
@@ -18,8 +16,17 @@ public:
     // modify by id
     bool modify(User u);
 
-    // get user list
-    vector<User> getList(User u, int pageno, int pagesize);
+    ///
+    /// \brief getList
+    /// \param u condition
+    /// \param pageno if 0 will return all users
+    /// \param pagesize if 0 will return all users
+    /// \param return_users will point to memory alloctaed from pool
+    /// \param pool
+    /// \return num of users
+    ///
+    int getFullList(User *&return_users, MemoryPool *pool);
+
 private:
     static UserManager *s_instance;
     UserManager();

@@ -10,6 +10,7 @@ using namespace FxChat;
 
 Login::Login(QWidget *parent) : QDialog(parent), ui(new Ui::Login) {
     ui->setupUi(this);
+    this->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     QObject::connect(ui->btn_login, SIGNAL(clicked()), this, SLOT(_do_login()));
 
     this->__logining = false;

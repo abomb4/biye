@@ -57,8 +57,8 @@ void ClientConnection::_doListen() {
     while(true) {
         buffer = this->_pool->borrow(8);
         bzero(buffer, 8);
-        // recieve msg head, //MSG_PEEK mode
-        int n = recv(this->_sockfd, buffer, 8, 0);
+        // recieve msg head, MSG_PEEK mode
+        int n = recv(this->_sockfd, buffer, 8, MSG_PEEK);
         this->_send_mutex.lock(); // LOCK
         if (n < 0) {
             ClientConnection::_logger->error("({}) ERROR reading from socket", (void*)this);
@@ -73,16 +73,25 @@ void ClientConnection::_doListen() {
             FxServer::makeFailureMsg(returnMsg, FxChatError::FXM_MSG_TOO_SHORT, this->_pool, 0);
         } else { // normal
             FxMessage *recieveMsg = nullptr;
-            FxChatError err = this->_doParse(buffer, recieveMsg);
+            char *bodystr;
+            uint32_t bodylength = 0;
+            uint16_t fno = 0;
+            FxChatError err = this->_doRead(bodystr, bodylength, fno);
             if (err != FxChatError::FXM_SUCCESS) { // wrong
                 FxServer::makeFailureMsg(returnMsg, err, this->_pool, 0);
             } else {
-                // LETS DO OPERATION!
-                FxChatError err = FxServer::doOperation(returnMsg, recieveMsg, this);
-                if (err != FxChatError::FXM_SUCCESS) {
-                    FxServer::makeFailureMsg(returnMsg, err, this->_pool);
-                    if (err == FxChatError::FXM_MSG_TOO_LONG || err == FxChatError::FXM_PARSE_FAIL)
-                        _breakIt = true;
+                // parse msg
+                err = this->_doParse(bodystr, bodylength, fno, recieveMsg);
+                if (err != FXM_SUCCESS) {
+                    FxServer::makeFailureMsg(returnMsg, err, this->_pool, 0);
+                } else {
+                    // LETS DO OPERATION!
+                    err = FxServer::doOperation(returnMsg, recieveMsg, this);
+                    if (err != FxChatError::FXM_SUCCESS) {
+                        FxServer::makeFailureMsg(returnMsg, err, this->_pool);
+                        if (err == FxChatError::FXM_MSG_TOO_LONG || err == FxChatError::FXM_PARSE_FAIL)
+                            _breakIt = true;
+                    }
                 }
             }
         }
@@ -99,34 +108,43 @@ void ClientConnection::_doListen() {
     // delete this;
 }
 
-FxChatError ClientConnection::_doParse(const char *buffer_8, FxMessage *&msg) {
+FxChatError ClientConnection::_doRead(char *&body, uint32_t &bodylength, uint16_t &fno, bool isrecursion) {
+    int n = 0;
+    char *buffer_8 = this->_pool->borrow(8);
+    n = recv(this->_sockfd, buffer_8, 8, 0);
     // parse body length and from_user first
     uint16_t msg_body_length = 0;
     msg_body_length += buffer_8[0] << 8;
     msg_body_length += buffer_8[1];
     msg_body_length = ntohs(msg_body_length);
-    if (msg_body_length > MAX_FXMESSAGE_SIZE - 8) { // message body too long
-        return FxChatError::FXM_MSG_TOO_LONG;
+
+    uint16_t pagesize = 0;
+    pagesize += buffer_8[2] << 8;
+    pagesize += buffer_8[3];
+    pagesize = ntohs(pagesize);
+
+    uint16_t pageno = 0;
+    pageno += buffer_8[4] << 8;
+    pageno += buffer_8[5];
+    pageno = ntohs(pageno);
+
+    uint16_t _fno = 0;
+    _fno += buffer_8[6] << 8;
+    _fno += buffer_8[7];
+    _fno = ntohs(_fno);
+
+    char *buffer;
+    if (!isrecursion) { // non-recursion, first call
+        bodylength = msg_body_length * pagesize;
+        body = this->_pool->borrow(bodylength);
+        fno = _fno;
     }
-    msg = new (this->_pool->borrow(sizeof(FxMessage))) FxMessage();
+    buffer = body;
 
-    uint32_t from_user_n = 0;
-    from_user_n += buffer_8[2] << 24;
-    from_user_n += buffer_8[3] << 16;
-    from_user_n += buffer_8[4] << 8;
-    from_user_n += buffer_8[5];
-    msg->fromUser(ntohl(from_user_n));
-
-    uint16_t fno = 0;
-    fno += buffer_8[6] << 8;
-    fno += buffer_8[7];
-    msg->fno(ntohs(fno));
-
-    // do read
-    char *msg_body_buff = this->_pool->borrow(msg_body_length);
-    int n = 0, need = msg_body_length;
+    // recieve a body
+    int need = msg_body_length;
     while(need > 0) {
-        n = recv(this->_sockfd, msg_body_buff + msg_body_length - need, msg_body_length, 0);
+        n = recv(this->_sockfd, buffer, msg_body_length, 0);
         if (n < 0) {
             ClientConnection::_logger->error("({}) ERROR reading from socket in _doParse()", (void*)this);
             return FxChatError::FXM_SOCKET_ERR;
@@ -134,17 +152,48 @@ FxChatError ClientConnection::_doParse(const char *buffer_8, FxMessage *&msg) {
             ClientConnection::_logger->info("({}) client closes connection in _doParse()", (void*)this);
             return FxChatError::FXM_SOCKET_ERR;
         }
+        buffer += n;
         need -= n;
+    } // body recieved
+
+    // send recieved callback
+    char ret[19];
+    memset(ret, 0, 19);
+    memcpy(ret, buffer_8, 8);
+    strcat(ret, "stat:succ\n");
+    n = write(this->_sockfd, ret, 18);
+    if (n < 0) {
+        ClientConnection::_logger->error("({}) ERROR writing from socket in _doParse()", (void*)this);
+        return FxChatError::FXM_SOCKET_ERR;
+    } else if (n == 0) {
+        ClientConnection::_logger->info("({}) client closes connection in _doParse()", (void*)this);
+        return FxChatError::FXM_SOCKET_ERR;
     }
 
+    // read next package if exists
+    if (pagesize > pageno) {
+        FxChatError e = this->_doRead(buffer, bodylength, fno, true);
+        if (e != FXM_SUCCESS) {
+            return e;
+        }
+    } else if (pagesize == pageno) {
+        // recalculate bodylength
+        bodylength -= (FXMESSAGE_BLOCK_SIZE - msg_body_length);
+    } else {
+        return FXM_FAIL;
+    }
+    return FxChatError::FXM_SUCCESS;
+}
+
+FxChatError ClientConnection::_doParse(char *body, uint32_t &bodylength, uint16_t &fno, FxMessage *&msg) {
     // START PARSE!
     FxMessageParam *p;
-    char *line_cur = msg_body_buff; // line start
+    char *line_cur = body; // line start
     char *colon_pos = line_cur; // ':' 's position
     char *nl_pos = line_cur; // '\n' 's position
     char current_stat = 0; // 0 finding ':'; 1 finding '\n';
     bool is_body = false;
-    for (int i = msg_body_length; i > 0; i--) {
+    for (int i = bodylength; i > 0; i--) {
         // loop use nl_pos
         if (current_stat == 0 && *nl_pos == ':') { // ':' founded
             if (line_cur == nl_pos) { // a line start with ':'
@@ -176,7 +225,7 @@ FxChatError ClientConnection::_doParse(const char *buffer_8, FxMessage *&msg) {
     }
     // parse body
     if (is_body) {
-        int bodylen = msg_body_length - (colon_pos + 1 - msg_body_buff);
+        int bodylen = bodylength - (colon_pos + 1 - msg_body_buff);
         p = new (this->_pool->borrow(sizeof(FxMessageParam))) FxMessageParam;
         p->setName(line_cur, (int)(colon_pos - line_cur - 1)); // minus ':'
         p->setVal(colon_pos + 1, bodylen);

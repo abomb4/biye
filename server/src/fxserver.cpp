@@ -5,6 +5,7 @@
 #include <spdlog/spdlog.h>
 
 #include "usermanager.h"
+#include "fxcjson.h"
 
 namespace FxChat {
 namespace FxServer{
@@ -18,33 +19,37 @@ std::shared_ptr<spdlog::logger> _logger() {
 }
 
 FxChatError _login(FxMessage *&retmsg, const FxMessage *msg, ClientConnection *c);
-FxChatError _get_user_list(FxMessage *&retmsg, const FxMessage *msg, ClientConnection *c);
-FxChatError _change_password(FxMessage *&retmsg, const FxMessage *msg, ClientConnection *c);
+FxChatError _get_user_list_full(FxMessage *&retmsg, const FxMessage *msg, ClientConnection *c);
+FxChatError _get_user_list_diff(FxMessage *&retmsg, const FxMessage *msg, ClientConnection *c);
+FxChatError _get_department_list_full(FxMessage *&retmsg, const FxMessage *msg, ClientConnection *c);
+FxChatError _get_department_list_diff(FxMessage *&retmsg, const FxMessage *msg, ClientConnection *c);
+FxChatError _get_online_users(FxMessage *&retmsg, const FxMessage *msg, ClientConnection *c);
 FxChatError _get_user_detail(FxMessage *&retmsg, const FxMessage *msg, ClientConnection *c);
-FxChatError _send_msg(FxMessage *&retmsg, const FxMessage *msg, ClientConnection *c);
+FxChatError _send_message(FxMessage *&retmsg, const FxMessage *msg, ClientConnection *c);
 
 FxChatError doOperation(FxMessage *&retmsg, const FxMessage *msg, ClientConnection *c) {
     FxChatError (*_func)(FxMessage *&, const FxMessage *, ClientConnection *);
     bool unknown = false;
     switch (msg->fno()) {
-    case FxFunction::Login:
+    case FxFunction::FXF_Login:
         _func = _login; break;
-
-    case FxFunction::GetUserList:
-        _func = _get_user_list; break;
-
-    case FxFunction::ChangePassword:
-        _func = _change_password; break;
-
-    case FxFunction::GetUserDetail:
-        _func = _get_user_detail; break;
-
-    case FxFunction::SendMessage:
-        _func = _send_msg; break;
-
+    case FxFunction::FXF_GetUserListFull:
+        _func = _get_user_list_full;break;
+    case FxFunction::FXF_GetUserListDiff:
+        _func = _get_user_list_diff;break;
+    case FxFunction::FXF_GetDepartemntListFull:
+        _func = _get_department_list_full;break;
+    case FxFunction::FXF_GetDepartmentListDiff:
+        _func = _get_department_list_diff;break;
+    case FxFunction::FXF_GetOnlineUsers:
+        _func = _get_online_users;break;
+    case FxFunction::FXF_GetUserDetail:
+        _func = _get_user_detail;break;
+    case FxFunction::FXF_SendMessage:
+        _func = _send_message;break;
     default:
         unknown = true;
-    }
+    };
 
     if (unknown) {
         _logger()->warn("Unknown function no {}.", msg->fno());
@@ -62,7 +67,7 @@ void _errcode_to_char4(FxChatError e, char *buffer) {
 
 void makeFailureMsg(FxMessage *&retmsg, FxChatError e, MemoryPool *pool, uint32_t from_user) {
     FxMessage *rec = new (pool->borrow(sizeof(FxMessage))) FxMessage;
-    rec->fromUser(from_user);
+    // rec->fromUser(from_user);
     FxMessageParam *fmp_tmp = nullptr;
     char *c_tmp = nullptr;
     // deal with fno
@@ -106,6 +111,7 @@ void makeFailureMsg(FxMessage *&retmsg, FxChatError e, MemoryPool *pool, uint32_
     retmsg = rec;
 }
 
+///////////////////////////////////// Login
 typedef struct _s_login_pack {
     const char *name;
     const char *password;
@@ -157,27 +163,71 @@ FxChatError _login(FxMessage *&retmsg, const FxMessage *msg, ClientConnection *c
 
     return FxChatError::FXM_SUCCESS;
 }
+// Login end
 
-FxChatError _get_user_list(FxMessage *&retmsg, const FxMessage *msg, ClientConnection *c) {
+///////////////////////////////////// GetUserListFull
+/// 本方法没有传入参数
+FxChatError _get_user_list_full(FxMessage *&retmsg, const FxMessage *msg, ClientConnection *c) {
+    _logger()->debug("({}) get full user list", (void*)c);
+    User *list;
+    int count = UserManager::getInstance().getFullList(list, c->pool());
+    cJSON_set_pool(c->pool());
+    cJSON *array = cJSON_CreateArray();
+    for (int i = 0; i < count; i++) {
+        cJSON *obj = cJSON_CreateObject();
+        cJSON_AddNumberToObject(obj, "id", list[i].id());
+        cJSON_AddStringToObject(obj, "name", list[i].name().c_str());
+        cJSON_AddNumberToObject(obj, "department", list[i].department());
+        cJSON_AddStringToObject(obj, "true_name", list[i].trueName().c_str());
+        cJSON_AddItemToArray(array, obj);
+    }
+    char *liststr = cJSON_PrintUnformatted(array);
 
     return FxChatError::FXM_SUCCESS;
 }
+// GetUserListFull end
 
-FxChatError _change_password(FxMessage *&retmsg, const FxMessage *msg, ClientConnection *c) {
+///////////////////////////////////// GetUserListDiff
+FxChatError _get_user_list_diff(FxMessage *&retmsg, const FxMessage *msg, ClientConnection *c) {
 
     return FxChatError::FXM_SUCCESS;
 }
+// GetUserListDiff end
 
+///////////////////////////////////// GetDepartemntListFull
+FxChatError _get_department_list_full(FxMessage *&retmsg, const FxMessage *msg, ClientConnection *c) {
+
+    return FxChatError::FXM_SUCCESS;
+}
+// GetDepartemntListFull end
+
+///////////////////////////////////// GetDepartemntListDiff
+FxChatError _get_department_list_diff(FxMessage *&retmsg, const FxMessage *msg, ClientConnection *c) {
+
+    return FxChatError::FXM_SUCCESS;
+}
+// GetDepartemntListDiff end
+
+///////////////////////////////////// GetOnlineUsers
+FxChatError _get_online_users(FxMessage *&retmsg, const FxMessage *msg, ClientConnection *c) {
+
+    return FxChatError::FXM_SUCCESS;
+}
+// GetOnlineUsers end
+
+///////////////////////////////////// GetUserDetail
 FxChatError _get_user_detail(FxMessage *&retmsg, const FxMessage *msg, ClientConnection *c) {
 
     return FxChatError::FXM_SUCCESS;
 }
+// GetUserDetail end
 
-FxChatError _send_msg(FxMessage *&retmsg, const FxMessage *msg, ClientConnection *c) {
+///////////////////////////////////// SendMessage
+FxChatError _send_message(FxMessage *&retmsg, const FxMessage *msg, ClientConnection *c) {
 
     return FxChatError::FXM_SUCCESS;
 }
-
+// SendMessage end
 
 }
 }
