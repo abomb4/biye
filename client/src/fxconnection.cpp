@@ -202,6 +202,7 @@ FxChatError FxConnection::_doRead(char *&body, uint32_t &bodylength, uint16_t &f
     memcpy(ret, buffer_8, 8);
     memcpy(ret + 8, "stat:succ\n", 10);
     n = this->_socket->write(ret, 18);
+    this->_socket->waitForBytesWritten();
     if (n < 0) {
         return FxChatError::FXM_SOCKET_ERR;
     } else if (n == 0) {
