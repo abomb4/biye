@@ -36,7 +36,7 @@ private:
     FxChatError _doRead(char *&body, uint32_t &bodylength, uint16_t &fno, bool isrecursion = false);
 
     // parse
-    FxChatError _doParse(char *body, uint32_t &bodylength, uint16_t &fno, FxMessage *&msg);
+    FxChatError _doParse(char *body, uint32_t bodylength, uint16_t fno, FxMessage *&msg);
 
     // send msg
     void _doSend(FxMessage *x);

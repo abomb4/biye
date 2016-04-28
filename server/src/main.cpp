@@ -66,6 +66,11 @@ void handleSigterm(int signum) {
     logger->info("Quited.", signum);
     exit(0);
 }
+// handle SIGPIPE, dont quit
+void handle_pipe(int sig)
+{
+//不做任何处理即可
+}
 
 // regist Loggers
 void registLoggers() {
@@ -120,6 +125,12 @@ int main(int argc, char *argv[])
     action.sa_handler = handleSigterm;
     sigaction(SIGTERM, &action, NULL);
     sigaction(SIGINT, &action, NULL);
+
+    // SIGPIPE
+    action.sa_handler = handle_pipe;
+    // sigemptyset(&action.sa_mask);
+    action.sa_flags = 0;
+    sigaction(SIGPIPE, &action, NULL);
 
 
     // check pid file status

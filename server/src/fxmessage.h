@@ -4,7 +4,7 @@
 #include <cstdint>
 #include "memorypool.h"
 
-#define FXMESSAGE_BLOCK_SIZE 32768
+#define FXMESSAGE_BLOCK_SIZE 32760
 #define FXMESSAGE_BLOCK_MAX  128
 
 namespace FxChat {
@@ -34,8 +34,8 @@ public:
 
     const char *name;
     const char *val;
-    short l_name;
-    short l_val;
+    uint32_t l_name;
+    uint32_t l_val;
 
     FxMessageParam *_next;
 };
@@ -47,7 +47,7 @@ public:
 
     // getter setter
     void fno(uint16_t uid);
-    const uint16_t fno() const;
+    uint16_t fno() const;
     const FxMessageParam* paramList() const { return this->_body_list; }
 
     void addParam(FxMessageParam *addr);
@@ -55,10 +55,13 @@ public:
     uint32_t bodyLength() const;
 
     // NEED bodyLength() byte memory !!!
-    bool bodyStr(char *buffer, int length);
+    bool bodyStr(char *buffer, unsigned int length);
+
+    // return pack sum
+    int toPackages(char **&buffer, int *&plengths, MemoryPool *pool);
 
 private:
-    uint16_t __bodylength;
+    uint32_t __bodylength;
     uint16_t _fno;
     FxMessageParam *_body_list; // link list
     FxMessageParam *__list_current; // link list current

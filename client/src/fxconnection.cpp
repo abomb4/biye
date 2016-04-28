@@ -55,8 +55,9 @@ FxConnection::FxConnection(const QString &host, const short &port, bool connects
     connect(this->_socket, SIGNAL(connected()), this, SLOT(__connected_slot()));
     connect(this->_socket, SIGNAL(disconnected()), this, SLOT(__disconnected_slot()));
     this->created();
-    if (connects)
+    if (connects) {
         this->_socket->connectToHost(this->_host, this->_port);
+    }
 
     FxConnection::_new_connection_reg(this);
 }
@@ -77,20 +78,16 @@ FxConnection::~FxConnection() {
 /// \return
 ///
 FxChatError FxConnection::recieve(FxMessage *&msgbuff) {
-    char *buffer = this->_pool->borrow(8);
-    bzero(buffer, 8);
-    this->_socket->waitForReadyRead(4000);
-    int n = this->_socket->read(buffer, 8);
-    if (n < 0) {
-        return FxChatError::FXM_SOCKET_ERR;
-    } else if (n == 0) {
-        this->disconnected();
-        return FxChatError::FXM_SOCKET_ERR;
-    }
-    if (n < 8) {
-        return FxChatError::FXM_MSG_TOO_SHORT;
+    char *bodystr;
+    uint32_t bodylength = 0;
+    uint16_t fno = 0;
+    FxChatError err = this->_doRead(bodystr, bodylength, fno);
+    if (err != FxChatError::FXM_SUCCESS) { // wrong
+        return err;
     } else {
-        return FxConnection::_doParse(buffer, msgbuff);
+        // parse msg
+        err = this->_doParse(bodystr, bodylength, fno, msgbuff);
+        return err;
     }
 }
 
@@ -100,15 +97,35 @@ FxChatError FxConnection::recieve(FxMessage *&msgbuff) {
 /// \return
 ///
 FxChatError FxConnection::send(const FxMessage *x) {
-    int buffer_length = x->needBufferSize();
-    char *buffer = this->_pool->borrow(buffer_length);
-    if (!x->toCharStr(buffer, buffer_length)) {
-        return FxChatError::FXM_PARSE_FAIL;
-    } else {
-        int n = 0;
-        n = this->_socket->write(buffer, buffer_length);
-        if (n < 0) {
+    char **packages;
+    int *plengths;
+    int package_sum = x->toPackages(packages, plengths, this->_pool);
+    char *recvbuff = this->_pool->borrow(19);
+    memset(recvbuff, 0, 19);
+    for (int i = 0; i < package_sum; i++) {
+        int n;
+        int tries = 3;
+        bool succ = false;
+        while (tries--) {
+            n = this->_socket->write(packages[i], plengths[i]);
+            this->_socket->waitForBytesWritten();
+            if (n <= 0) {
+                return FxChatError::FXM_SOCKET_ERR;
+            } else {
+                succ = true;
+                break;
+            }
+        }
+        if (!succ)
             return FxChatError::FXM_SOCKET_ERR;
+        this->_socket->waitForReadyRead(4000);
+        n = this->_socket->read(recvbuff, 18);
+        if (n < 0) {
+            return FxChatError::FXM_NO_RESPONSE_RECIEVED;
+        }
+        if (strncmp(packages[i], recvbuff, 8) != 0
+                || strncmp(recvbuff + 8, "stat:succ\n", 10) != 0) {
+            qDebug() << "NON SUCC!";
         }
     }
     return FxChatError::FXM_SUCCESS;
@@ -125,55 +142,96 @@ LinearMemoryPool *FxConnection::getPool() {
     return this->_pool;
 }
 
-void FxConnection::connectToHost() {
+bool FxConnection::connectToHost() {
     this->_socket->connectToHost(this->_host, this->_port);
+    return this->_socket->waitForConnected(5000);
 }
 
 // private
-FxChatError FxConnection::_doParse(const char *buffer_8, FxMessage *&msg) {
+FxChatError FxConnection::_doRead(char *&body, uint32_t &bodylength, uint16_t &fno, bool isrecursion) {
+    int n = 0;
+    char *buffer_8 = this->_pool->borrow(8);
+    this->_socket->waitForReadyRead(4000);
+    n = this->_socket->read(buffer_8, 8);
+
     // parse body length and from_user first
     uint16_t msg_body_length = 0;
     msg_body_length += buffer_8[0] << 8;
     msg_body_length += buffer_8[1];
     msg_body_length = qFromBigEndian(msg_body_length);
-    if (msg_body_length > MAX_FXMESSAGE_SIZE - 8) { // message body too long
-        return FxChatError::FXM_MSG_TOO_LONG;
+
+    uint16_t pagesize = 0;
+    pagesize += buffer_8[2] << 8;
+    pagesize += buffer_8[3];
+    pagesize = qFromBigEndian(pagesize);
+
+    uint16_t pageno = 0;
+    pageno += buffer_8[4] << 8;
+    pageno += buffer_8[5];
+    pageno = qFromBigEndian(pageno);
+
+    uint16_t _fno = 0;
+    _fno += buffer_8[6] << 8;
+    _fno += buffer_8[7];
+    _fno = qFromBigEndian(_fno);
+
+    char *buffer;
+    if (!isrecursion) { // non-recursion, first call
+        bodylength = msg_body_length * pagesize;
+        body = this->_pool->borrow(bodylength);
+        fno = _fno;
     }
-    msg = new (this->_pool->borrow(sizeof(FxMessage))) FxMessage();
+    buffer = body;
 
-    uint32_t from_user_n = 0;
-    from_user_n += buffer_8[2] << 24;
-    from_user_n += buffer_8[3] << 16;
-    from_user_n += buffer_8[4] << 8;
-    from_user_n += buffer_8[5];
-    msg->fromUser(qFromBigEndian(from_user_n));
-
-    uint16_t fno = 0;
-    fno += buffer_8[6] << 8;
-    fno += buffer_8[7];
-    msg->fno(qFromBigEndian(fno));
-
-    // do read
-    char *msg_body_buff = this->_pool->borrow(msg_body_length);
-    int n = 0, need = msg_body_length;
+    // recieve a body
+    int need = msg_body_length;
     while(need > 0) {
-        n = this->_socket->read(msg_body_buff + msg_body_length - need, msg_body_length);
+        n = this->_socket->read(buffer, msg_body_length);
         if (n < 0) {
             return FxChatError::FXM_SOCKET_ERR;
         } else if (n == 0) {
             return FxChatError::FXM_SOCKET_ERR;
         }
+        buffer += n;
         need -= n;
+    } // body recieved
+
+    // send recieved callback
+    char ret[19];
+    memset(ret, 0, 19);
+    memcpy(ret, buffer_8, 8);
+    memcpy(ret + 8, "stat:succ\n", 10);
+    n = this->_socket->write(ret, 18);
+    if (n < 0) {
+        return FxChatError::FXM_SOCKET_ERR;
+    } else if (n == 0) {
+        return FxChatError::FXM_FAIL;
     }
 
+    // read next package if exists
+    if (pagesize > pageno) {
+        FxChatError e = this->_doRead(buffer, bodylength, fno, true);
+        if (e != FXM_SUCCESS) {
+            return e;
+        }
+    } else if (pagesize > 1 && pagesize == pageno) {
+        // recalculate bodylength
+        bodylength -= (FXMESSAGE_BLOCK_SIZE - msg_body_length);
+    }
+    return FxChatError::FXM_SUCCESS;
+}
+
+FxChatError FxConnection::_doParse(char *body, uint32_t &bodylength, uint16_t &fno, FxMessage *&msg) {
     // START PARSE!
+    msg = new (this->_pool->borrow(sizeof(FxMessage))) FxMessage();
+    msg->fno(fno);
     FxMessageParam *p;
-    char *line_cur = msg_body_buff; // line start
+    char *line_cur = body; // line start
     char *colon_pos = line_cur; // ':' 's position
     char *nl_pos = line_cur; // '\n' 's position
     char current_stat = 0; // 0 finding ':'; 1 finding '\n';
     bool is_body = false;
-    for (int i = msg_body_length; i > 0; i--) {
+    for (int i = bodylength; i > 0; i--) {
         // loop use nl_pos
         if (current_stat == 0 && *nl_pos == ':') { // ':' founded
             if (line_cur == nl_pos) { // a line start with ':'
@@ -204,7 +262,7 @@ FxChatError FxConnection::_doParse(const char *buffer_8, FxMessage *&msg) {
     }
     // parse body
     if (is_body) {
-        int bodylen = msg_body_length - (colon_pos + 1 - msg_body_buff);
+        int bodylen = bodylength - (colon_pos + 1 - body);
         p = new (this->_pool->borrow(sizeof(FxMessageParam))) FxMessageParam;
         p->setName(line_cur, (int)(colon_pos - line_cur - 1)); // minus ':'
         p->setVal(colon_pos + 1, bodylen);

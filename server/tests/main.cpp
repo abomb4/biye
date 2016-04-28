@@ -12,6 +12,7 @@
 //#include "spdlogtest.h"
 #include "fxcjsontest.h"
 #include "usermanagertest.h"
+#include "fxmessagetest.h"
 
 #include <spdlog/spdlog.h>
 

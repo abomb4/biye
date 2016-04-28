@@ -66,13 +66,12 @@ void ServerListener::startListener() {
     int newsockfd;
     socklen_t clilen;
     struct sockaddr_in serv_addr, cli_addr;
-    int n;
     this->_sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (this->_sockfd < 0) {
         cerr << "ERROR opening socket" << endl;
         exit(2);
     }
-    bzero((char *) &serv_addr, sizeof(serv_addr));
+    memset((char *) &serv_addr, 0, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = INADDR_ANY; // any IP
     serv_addr.sin_port = htons(port);

@@ -11,6 +11,7 @@
 #include "config.h"
 #include "linearmemorypool.h"
 #include "fxserver.h"
+#include "usersession.h"
 
 using std::cout;
 using std::endl;
@@ -33,13 +34,14 @@ ClientConnection::ClientConnection(int sockfd, int poolsize, char *poolObjMemory
 ClientConnection::~ClientConnection() {
     ClientConnection::_logger->info("({}) A connection destoried.", (void*)this);
     this->_listener_t.detach();
+    UserSession::destroySessionBySockFd(this->_sockfd, false);
     close(this->_sockfd);
     // CANNOT DELETE BECAUSE OF BLOCKEDMEMORYPOOL
     LinearMemoryPool *_free = (LinearMemoryPool *)this->_pool;
     _free->~LinearMemoryPool();
     // delete this->_pool;
 
-    // free
+    // free from blockedMemoryPool
     (*this->_restore)((char *)this);
 }
 
@@ -56,7 +58,7 @@ void ClientConnection::_doListen() {
     bool _breakIt = false;
     while(true) {
         buffer = this->_pool->borrow(8);
-        bzero(buffer, 8);
+        memset(buffer, 0, 8);
         // recieve msg head, MSG_PEEK mode
         int n = recv(this->_sockfd, buffer, 8, MSG_PEEK);
         this->_send_mutex.lock(); // LOCK
@@ -78,6 +80,10 @@ void ClientConnection::_doListen() {
             uint16_t fno = 0;
             FxChatError err = this->_doRead(bodystr, bodylength, fno);
             if (err != FxChatError::FXM_SUCCESS) { // wrong
+                if (err == FxChatError::FXM_SOCKET_ERR) {
+                    this->~ClientConnection();
+                    return;
+                }
                 FxServer::makeFailureMsg(returnMsg, err, this->_pool, 0);
             } else {
                 // parse msg
@@ -160,7 +166,7 @@ FxChatError ClientConnection::_doRead(char *&body, uint32_t &bodylength, uint16_
     char ret[19];
     memset(ret, 0, 19);
     memcpy(ret, buffer_8, 8);
-    strcat(ret, "stat:succ\n");
+    memcpy(ret + 8, "stat:succ\n", 10);
     n = write(this->_sockfd, ret, 18);
     if (n < 0) {
         ClientConnection::_logger->error("({}) ERROR writing from socket in _doParse()", (void*)this);
@@ -176,17 +182,17 @@ FxChatError ClientConnection::_doRead(char *&body, uint32_t &bodylength, uint16_
         if (e != FXM_SUCCESS) {
             return e;
         }
-    } else if (pagesize == pageno) {
+    } else if (pagesize > 1 && pagesize == pageno) {
         // recalculate bodylength
         bodylength -= (FXMESSAGE_BLOCK_SIZE - msg_body_length);
-    } else {
-        return FXM_FAIL;
     }
     return FxChatError::FXM_SUCCESS;
 }
 
-FxChatError ClientConnection::_doParse(char *body, uint32_t &bodylength, uint16_t &fno, FxMessage *&msg) {
+FxChatError ClientConnection::_doParse(char *body, uint32_t bodylength, uint16_t fno, FxMessage *&msg) {
     // START PARSE!
+    msg = new (this->_pool->borrow(sizeof(FxMessage))) FxMessage();
+    msg->fno(fno);
     FxMessageParam *p;
     char *line_cur = body; // line start
     char *colon_pos = line_cur; // ':' 's position
@@ -225,7 +231,7 @@ FxChatError ClientConnection::_doParse(char *body, uint32_t &bodylength, uint16_
     }
     // parse body
     if (is_body) {
-        int bodylen = bodylength - (colon_pos + 1 - msg_body_buff);
+        int bodylen = bodylength - (colon_pos + 1 - body);
         p = new (this->_pool->borrow(sizeof(FxMessageParam))) FxMessageParam;
         p->setName(line_cur, (int)(colon_pos - line_cur - 1)); // minus ':'
         p->setVal(colon_pos + 1, bodylen);
@@ -235,18 +241,35 @@ FxChatError ClientConnection::_doParse(char *body, uint32_t &bodylength, uint16_
 }
 
 void ClientConnection::_doSend(FxMessage *x) {
-    int buffer_length = x->needBufferSize();
-    char *buffer = this->_pool->borrow(buffer_length);
-    if (!x->toCharStr(buffer, buffer_length)) {
-        // ERROR
-        _logger->error("FxMessage To CharStr FAILED!!");
-        int n = write(this->_sockfd, "failed to build msg", 19);
-        if (n < 0)
-            ClientConnection::_logger->error("({}) ERROR writing to socket", (void*)this);
-    } else {
-        int n = 0;
-        n = write(this->_sockfd, buffer, buffer_length);
-        if (n < 0)
-            ClientConnection::_logger->error("({}) ERROR writing to socket", (void*)this);
+    char **packages;
+    int *plengths;
+    int package_sum = x->toPackages(packages, plengths, this->_pool);
+    char *recvbuff = this->_pool->borrow(19);
+    memset(recvbuff, 0, 19);
+    for (int i = 0; i < package_sum; i++) {
+        int n;
+        int tries = 3;
+        bool succ = false;
+        while (tries--) {
+            n = send(this->_sockfd, packages[i], plengths[i], MSG_NOSIGNAL);
+            if (n <= 0) {
+                ClientConnection::_logger->error("({}) ERROR writing to socket", (void*)this);
+                succ = false;
+            } else {
+                succ = true;
+                break;
+            }
+        }
+        if (!succ)
+            return;
+        n = recv(this->_sockfd, recvbuff, 18, 0);
+        if (n < 0) {
+            ClientConnection::_logger->error("({}) ERROR reading response pack.", (void*)this);
+            break;
+        }
+        if (strncmp(packages[i], recvbuff, 8) != 0
+                || strncmp(recvbuff + 8, "stat:succ\n", 10) != 0) {
+            ClientConnection::_logger->error("({}) ERROR WRONG RESPONSE HEADER!!", (void*)this);
+        }
     }
 }

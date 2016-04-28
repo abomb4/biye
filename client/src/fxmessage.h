@@ -4,7 +4,8 @@
 #include <cstdint>
 #include "memorypool.h"
 
-#define MAX_FXMESSAGE_SIZE 2048
+#define FXMESSAGE_BLOCK_SIZE 32760
+#define FXMESSAGE_BLOCK_MAX  128
 
 namespace FxChat {
 
@@ -33,8 +34,8 @@ public:
 
     const char *name;
     const char *val;
-    short l_name;
-    short l_val;
+    uint32_t l_name;
+    uint32_t l_val;
 
     FxMessageParam *_next;
 };
@@ -45,22 +46,22 @@ public:
     ~FxMessage();
 
     // getter setter
-    void fromUser(uint32_t uid);
-    uint32_t fromUser() const;
     void fno(uint16_t uid);
     uint16_t fno() const;
     const FxMessageParam* paramList() const { return this->_body_list; }
 
     void addParam(FxMessageParam *addr);
 
-    int needBufferSize() const;
+    uint32_t bodyLength() const;
 
-    // NEED needBufferSize() byte memory !!!
-    bool toCharStr(char *buffer, int length) const;
+    // NEED bodyLength() byte memory !!!
+    bool bodyStr(char *buffer, unsigned int length);
+
+    // return pack sum
+    int toPackages(char **&buffer, int *&plengths, MemoryPool *pool) const;
 
 private:
-    uint16_t _bodylength;
-    uint32_t _from_user;
+    uint32_t __bodylength;
     uint16_t _fno;
     FxMessageParam *_body_list; // link list
     FxMessageParam *__list_current; // link list current
@@ -75,6 +76,7 @@ enum FxChatError : uint16_t {
     FXM_UNKNOWN_FNO             = 6,
     FXM_PAREMETER_CHECK_FAIL    = 7,
     FXM_TIME_OUT                = 8,
+    FXM_NO_RESPONSE_RECIEVED    = 9,
 };
 
 }

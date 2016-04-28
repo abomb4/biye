@@ -31,7 +31,7 @@ public:
     FxChatError recieve(FxMessage *&buffer);
     FxChatError send(const FxMessage *data);
 
-    void connectToHost();
+    bool connectToHost();
 
     // DON'T FREE/DELETE BORROWED MEMORY!! USE clearPool() TO RESTORE ALL BORROWED MEM!!
     char *borrowFromPool(int size);
@@ -51,7 +51,10 @@ private:
     static QMutex __connections_vector_using__;
 
     void _read_thread_worker();
-    FxChatError _doParse(const char *buffer_8, FxMessage *&msg);
+    // read a full msg string
+    FxChatError _doRead(char *&body, uint32_t &bodylength, uint16_t &fno, bool isrecursion = false);
+    // parse
+    FxChatError _doParse(char *body, uint32_t &bodylength, uint16_t &fno, FxMessage *&msg);
 
     QAbstractSocket *_socket;
     LinearMemoryPool *_pool;

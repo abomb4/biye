@@ -19,7 +19,7 @@ include_directories(../src)
 include_directories(../src/include)
 
 add_library( FXTESTS STATIC
-    memorytest.h
+    fxmessagetest.h
     linearmemorypooltest.h
     blockedmemorypooltest.h
     mysqlconnectortest.h

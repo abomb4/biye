@@ -35,6 +35,7 @@ bool UserSession::destroySessionByUid(unsigned int id, bool destroy_connection) 
     UserSession::_pool->restore((char *)us);
     UserSession::_uid_session_map.erase(id);
     UserSession::_sockfd_session_map.erase(sockfd);
+    return true;
 }
 bool UserSession::destroySessionBySockFd(int sockfd, bool destroy_connection) {
     if (UserSession::_sockfd_session_map.count(sockfd) == 0)
@@ -48,6 +49,7 @@ bool UserSession::destroySessionBySockFd(int sockfd, bool destroy_connection) {
     UserSession::_pool->restore((char *)us);
     UserSession::_uid_session_map.erase(id);
     UserSession::_sockfd_session_map.erase(sockfd);
+    return true;
 }
 
 // non-static

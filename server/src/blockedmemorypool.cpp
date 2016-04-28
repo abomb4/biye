@@ -21,7 +21,7 @@ BlockedMemoryPool::BlockedMemoryPool(const int blocksize, const int blockmax) {
     // fullsize is borrow able size + next pool object size + stack size
     int fullsize = ablesize + sizeof(BlockedMemoryPool) + sizeof(char*) * this->_bmax;
     this->_pool = new char[fullsize]; // 5
-    bzero(this->_pool, fullsize);
+    memset(this->_pool, 0, fullsize);
 
     this->_tail = this->_pool + ablesize; // 6
 
