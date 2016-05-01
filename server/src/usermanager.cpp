@@ -18,11 +18,11 @@ UserManager &UserManager::getInstance() {
     return *s_instance;
 }
 
-bool UserManager::login(const char *username, const char *password) {
+bool UserManager::login(const char *username, const char *password, uint32_t &userid) {
     bool result = false;
     mysqlpp::Connection *con = MysqlConnector::getInstance()->getConnection();
     mysqlpp::Query q = con->query();
-    q << "select id, name, password, email from fx_user where name = %0q and password = %1q";
+    q << "select id, name from fx_user where name = %0q and password = %1q";
     q.parse();
     try {
         mysqlpp::StoreQueryResult res = q.store(username, password);
@@ -30,6 +30,8 @@ bool UserManager::login(const char *username, const char *password) {
             result = false;
         } else {
             result = true;
+            mysqlpp::Row row = res.begin()[0];
+            userid = atoi(((string)row[0]).c_str());
         }
     } catch (const mysqlpp::BadQuery& er) {
         // Handle any query errors

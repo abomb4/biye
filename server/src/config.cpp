@@ -35,7 +35,7 @@ void Config::load(const char *path) {
         while (std::getline(infile, buff)) {
             if (buff[0] == '#' || buff.length() == 0)
                 continue;
-            int pos_eq = buff.find_first_of("=");
+            unsigned int pos_eq = buff.find_first_of("=");
             if (pos_eq < 0 || pos_eq == buff.size() - 1) { // bad config line
                 cerr << "Bad config parse: " << buff << endl;
                 exit(-1);

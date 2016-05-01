@@ -1,11 +1,15 @@
 #include "ui/login.h"
 #include <QApplication>
 #include <QMessageBox>
+
 #include "config.h"
+#include "clientdb.h"
 
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
+    QApplication::setApplicationName("fxchat");
+    // QApplication::setOrganizationName("abomb4");
 
     // load config
     if (!Config::load("default.cfg")) {
@@ -14,6 +18,7 @@ int main(int argc, char *argv[])
                              QMessageBox::Ok, QMessageBox::Ok);
         exit(1);
     }
+    ClientDB::getInstance()->initdb();
 
     Login *w = new Login();
     w->show();

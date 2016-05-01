@@ -2,6 +2,7 @@
 #include <iostream>
 
 using namespace FxChat;
+uint32_t FxClient::USER_ID;
 
 char *_pooled_str(const char *source, int length, LinearMemoryPool *pool) {
     char *r = new (pool->borrow(length)) char[length];
@@ -11,15 +12,18 @@ char *_pooled_str(const char *source, int length, LinearMemoryPool *pool) {
 
 class loginResult{
 public:
-    loginResult() { this->name = nullptr; this->stat = nullptr; }
+    loginResult() { this->name = nullptr; this->stat = nullptr; this->userid = nullptr; }
     const char *name;
     const char *stat;
+    const char *userid;
 };
 void _set_to_login_result(loginResult *&result, const char *name, const char *val) {
     if (strcmp(name, "name") == 0)
         result->name = val;
     else if (strcmp(name, "stat") == 0)
         result->stat = val;
+    else if (strcmp(name, "userid") == 0)
+        result->userid = val;
 }
 
 FxChatError FxClient::login(const QString *name, const QString *password) {
@@ -68,6 +72,7 @@ FxChatError FxClient::login(const QString *name, const QString *password) {
         }
         if (result->stat != nullptr && strcmp(result->stat, "succ") == 0) { // success
             logined = true;
+            USER_ID = atoi(result->userid);
             e = FxChatError::FXM_SUCCESS;
         } else { // fail
             e = FxChatError::FXM_FAIL;

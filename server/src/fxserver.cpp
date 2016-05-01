@@ -137,7 +137,8 @@ FxChatError _login(FxMessage *&retmsg, const FxMessage *msg, ClientConnection *c
     if (pack->name == nullptr || pack->password == nullptr)
         return FxChatError::FXM_PAREMETER_CHECK_FAIL;
 
-    bool succ = UserManager::getInstance().login(pack->name, pack->password);
+    uint32_t userid;
+    bool succ = UserManager::getInstance().login(pack->name, pack->password, userid);
     retmsg = new (pool->borrow(sizeof(FxMessage))) FxMessage();
     FxMessageParam *param;
     // deal with name
@@ -157,6 +158,16 @@ FxChatError _login(FxMessage *&retmsg, const FxMessage *msg, ClientConnection *c
         } else { // login fail
             param->setVal("fail", 4);
         }
+        retmsg->addParam(param);
+        param = nullptr;
+    }
+    // deal with userid
+    if (succ) {
+        param = new (pool->borrow(sizeof(FxMessageParam))) FxMessageParam();
+        param->setName("userid", 6);
+        char *uid = new (pool->borrow(sizeof(char) * 11)) char[11];
+        sprintf(uid, "%d", userid);
+        param->setVal(uid, strlen(uid));
         retmsg->addParam(param);
         param = nullptr;
     }
@@ -182,6 +193,16 @@ FxChatError _get_user_list_full(FxMessage *&retmsg, const FxMessage *msg, Client
         cJSON_AddItemToArray(array, obj);
     }
     char *liststr = cJSON_PrintUnformatted(array);
+    retmsg = new (c->pool()->borrow(sizeof(FxMessage))) FxMessage();
+    FxMessageParam *param;
+    // deal with userlist
+    {
+        param = new (c->pool()->borrow(sizeof(FxMessageParam))) FxMessageParam();
+        param->setName("userlist", 8);
+        param->setVal(liststr, strlen(liststr));
+        retmsg->addParam(param);
+        param = nullptr;
+    }
 
     return FxChatError::FXM_SUCCESS;
 }

@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui network
+QT       += core gui network sql
 
 CONFIG += c++11
 
@@ -37,7 +37,10 @@ HEADERS  += \
     memorypool.h \
     fxconnection.h \
     config.h \
-    clientdb.h
+    clientdb.h \
+    structs/user.h \
+    structs/chatlog.h \
+    structs/department.h
 
 FORMS    += ui/login.ui \
     ui/mainwindow.ui \

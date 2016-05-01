@@ -20,7 +20,7 @@ Login::~Login() {
     delete ui;
 }
 
-// slot, when btn_login clicked
+// slot, when btn_login clicked, on main thread
 void Login::_do_login() {
     if (this->__logining)
         return;
@@ -39,11 +39,11 @@ void loginThread::run() {
     this->finished(e);
 }
 
-// slot, before login thread finishd
+// slot, before login thread finishd, on main thread
 void Login::__login_finish(unsigned short e) {
     if (e == FxChatError::FXM_SUCCESS) { // login success
         this->ui->lbl_errmsg->setText(tr("登录成功，初始化主界面…"));
-        w = new MainWindow();
+        w = new MainWindow(); // create mainwindow
         afterLoginThread *t = new afterLoginThread(w);
         connect(t, SIGNAL(finished()), this, SLOT(__after_login_finish()), Qt::QueuedConnection);
         QThreadPool::globalInstance()->start(t);

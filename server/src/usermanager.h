@@ -11,7 +11,7 @@ public:
     static UserManager &getInstance();
 
     // login
-    bool login(const char *name, const char *password);
+    bool login(const char *name, const char *password, uint32_t &userid);
 
     // modify by id
     bool modify(User u);
