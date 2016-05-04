@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
                              QMessageBox::Ok, QMessageBox::Ok);
         exit(1);
     }
-    ClientDB::getInstance()->initdb();
+    ClientDB::initdb();
 
     Login *w = new Login();
     w->show();

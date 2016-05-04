@@ -3,6 +3,8 @@
 
 #include <QMainWindow>
 #include <QtWidgets/QListWidgetItem>
+#include <QtWidgets/QLabel>
+#include <QtWidgets/QHBoxLayout>
 
 #include "structs/user.h"
 namespace Ui {
@@ -26,31 +28,62 @@ public slots:
     void openChatWindow(QListWidgetItem *item);
 private:
     Ui::MainWindow *ui;
+    User *_user_self;
     QVector<User> *_users;
     QVector<uint32_t> *_recent;
 };
 
-class ContactItem : public QListWidgetItem {
+class ContactWidget;
+
+class ContactManager {
 public:
-    ContactItem(QListWidget *view = Q_NULLPTR, int type = Type) : QListWidgetItem(view, type) { }
-    ContactItem(const QString &text, QListWidget *view = Q_NULLPTR, int type = Type)
-        : QListWidgetItem(text, view, type) {}
+    class Contact {
+    public:
+        Contact(uint32_t uid, const QString &name);
+        ContactWidget *createWidget();
 
-    ContactItem(const QIcon &icon, const QString &text,
-                             QListWidget *view = Q_NULLPTR, int type = Type)
-        : QListWidgetItem(icon, text, view, type) {}
+        void removeWidget(ContactWidget *w);
 
-    ContactItem(const QListWidgetItem &other) : QListWidgetItem(other) {}
+        void toOnline();
+        void toOffline();
 
-    virtual ~ContactItem() {
-        this->~QListWidgetItem();
-    }
-    enum DataRole : int {UserId = 10000};
+    private:
+        bool _online;
+        uint32_t _userid;
+        QString _name;
+        QVector<ContactWidget*> *_widgets;
+    };
+    // / //
 
-    QVariant data(int role) const;
-    void setData(int role, const QVariant & value);
+    static Contact* createContact(uint32_t uid, const QString &name);
+
 private:
-    uint32_t userid;
+    static QMap<uint32_t, Contact> _contact_map;
+};
+
+class ContactWidget : public QWidget {
+public:
+    ContactWidget(QWidget* parent = Q_NULLPTR, Qt::WindowFlags f = Qt::WindowFlags());
+    ContactWidget(ContactManager::Contact *p, QWidget* parent = Q_NULLPTR, Qt::WindowFlags f = Qt::WindowFlags());
+
+    virtual ~ContactWidget();
+    void toOnline();
+    void toOffline();
+    bool isOnline();
+
+    uint32_t userid() const;
+    void userid(uint32_t id);
+
+    void name(const QString &name);
+
+private:
+    ContactManager::Contact *_create_from;
+    bool _online;
+    uint32_t _userid;
+    QLabel *_icon;
+    QLabel *_name;
+    QHBoxLayout *_layout;
+    QSpacerItem *_spacer;
 };
 
 #endif // MAINWINDOW_H

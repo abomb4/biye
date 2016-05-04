@@ -93,14 +93,14 @@ FxChatError FxClient::login(const QString *name, const QString *password) {
     return e;
 }
 
-FxChatError FxClient::getUserList(QVector<User> *v) {
+FxChatError FxClient::getUserList(QVector<User> *&v) {
     qDebug() << "getUserList()";
     QDateTime now = QDateTime::currentDateTime();
     FxChatError e = FxChatError::FXM_SUCCESS;
     FxConnection *c = FxConnection::getServerConnection();
     c->lock();
     // TODO 1 getLastUserUpdateTime
-    QString last_time = ClientDB::getInstance()->getLastUserUpdateTime();
+    QString last_time = ClientDB::getLastUserUpdateTime();
     //      2 if '' get from server, else get diff list from server
     if (last_time.isEmpty()) {
         // getall
@@ -146,7 +146,7 @@ FxChatError FxClient::getUserList(QVector<User> *v) {
                     u.department(obj["department"].toInt());
                     v->append(u);
                 }
-                ClientDB::getInstance()->addUsers(v);
+                ClientDB::addUsers(v);
             }
         } else {
             qDebug() << "RECIEVE FAIL!" << e;
@@ -157,27 +157,31 @@ FxChatError FxClient::getUserList(QVector<User> *v) {
         c->clearPool();
         c->unlock();
         last_time = now.toString("yyyyMMddhhmmss");
-        ClientDB::getInstance()->setLastUserUpdateTime(last_time);
+        ClientDB::setLastUserUpdateTime(last_time);
     } else {
         //      3 if diff list not empty, update db
         //      4 get from db
-        v = ClientDB::getInstance()->getUsers();
+        v = ClientDB::getUsers();
     }
     qDebug() << "getUserList() finished";
     return FXM_SUCCESS;
 }
 
-FxChatError FxClient::getDepartmentList(QVector<Department> *v) {
+User *FxClient::getUserInfo(const uint32_t userid) {
+    return ClientDB::getUserById(userid);
+}
+
+FxChatError FxClient::getDepartmentList(QVector<Department> *&v) {
 
 }
 
-FxChatError FxClient::getRecent(QVector<uint32_t> *v) {
-    v = ClientDB::getInstance()->getRecent(USER_ID);
+FxChatError FxClient::getRecent(QVector<uint32_t> *&v) {
+    v = ClientDB::getRecent(USER_ID);
     return FXM_SUCCESS;
 }
 
 FxChatError FxClient::addRecent(const uint32_t target_id) {
-    if (ClientDB::getInstance()->addRecent(USER_ID, target_id))
+    if (ClientDB::addRecent(USER_ID, target_id))
         return FXM_SUCCESS;
     else return FXM_FAIL;
 }

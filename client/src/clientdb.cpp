@@ -3,16 +3,8 @@
 #include <QMessageBox>
 #include <QStandardPaths>
 
-ClientDB *ClientDB::_instance = nullptr;
-
-ClientDB *ClientDB::getInstance() {
-    if (_instance == nullptr) {
-        _instance = new ClientDB();
-    }
-    return _instance;
-}
-
-ClientDB::ClientDB() {}
+QSqlDatabase _db;
+QMutex _lock;
 
 bool createDB(const QString &path) {
     QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
@@ -88,9 +80,9 @@ void ClientDB::initdb() {
             return;
         }
     }
-    this->_db = QSqlDatabase::addDatabase("QSQLITE");
-    this->_db.setDatabaseName(dbpath);
-    if (!this->_db.open()) {
+    _db = QSqlDatabase::addDatabase("QSQLITE");
+    _db.setDatabaseName(dbpath);
+    if (!_db.open()) {
         QMessageBox::critical(0, "Cannot open database",
                "Open SQLite database fail.", QMessageBox::Cancel);
         exit(1);
@@ -122,13 +114,14 @@ QVector<User> *ClientDB::getUsers() {
 }
 User *ClientDB::getUserById(uint32_t id) {
     QSqlQuery query;
-    query.prepare("select id, name, email, true_name, department, icon, gmt_create, gmt_modify, status"
+    query.prepare("select id, name, email, true_name, department, icon, gmt_create, gmt_modify, status "
                "from fx_user where id = ?");
     query.bindValue(0, id);
     if (!query.exec()) {
         qDebug() << query.lastError();
         return nullptr;
     };
+    query.first();
     User *u = new User();
     u->id(query.value(0).toInt());
     u->name(query.value(1).toString());
@@ -145,7 +138,7 @@ QVector<User> *ClientDB::getUserByDepartmentId(uint32_t id) {}
 bool ClientDB::modifyUsersById(const QVector<User> *users) {}
 bool ClientDB::addUsers(const QVector<User> *users) {
     QSqlQuery q;
-        q.prepare("insert into fx_user(id, name, true_name, department, gmt_create, gmt_modify, status)"
+        q.prepare("insert into fx_user(id, name, true_name, department, gmt_create, gmt_modify, status) "
                   "values (?, ?, ?, ?, date(), date(), 1)");
 
     QVariantList ids, names, true_names, departments;
@@ -181,19 +174,19 @@ bool ClientDB::deleteDepartments(const QVector<Department>*) {}
 bool ClientDB::modifyDepartmentsById(const QVector<Department>*) {}
 
 ///////////////////////// status /////////////////////////
-QString ClientDB::getLastUserUpdateTime() const {
+QString ClientDB::getLastUserUpdateTime() {
     QSqlQuery query;
     query.exec("select value from `status` where `key` = 'last_user_update_time'");
     query.first();
     return query.value(0).toString();
 }
-QString ClientDB::getLastDepartmentUpdateTime() const {
+QString ClientDB::getLastDepartmentUpdateTime()  {
     QSqlQuery query;
     query.exec("select value from `status` where `key` = 'last_department_update_time'");
     query.first();
     return query.value(0).toString();
 }
-QString ClientDB::getLastUserName() const {
+QString ClientDB::getLastUserName() {
     QSqlQuery query;
     query.exec("select value from `status` where `key` = 'last_user_name'");
     query.first();

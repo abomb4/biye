@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>319</width>
-    <height>621</height>
+    <width>328</width>
+    <height>598</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -84,7 +84,7 @@
          <number>0</number>
         </property>
         <item>
-         <widget class="QListWidget" name="listWidget_2"/>
+         <widget class="QListWidget" name="list_department"/>
         </item>
        </layout>
       </widget>
@@ -106,16 +106,16 @@
          <number>0</number>
         </property>
         <item>
-         <widget class="QListWidget" name="listWidget"/>
+         <widget class="QListWidget" name="list_recent"/>
         </item>
        </layout>
       </widget>
       <widget class="QWidget" name="tab_all">
-       <property name="maximumSize">
-        <size>
-         <width>315</width>
-         <height>489</height>
-        </size>
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
        </property>
        <attribute name="title">
         <string>所有联系人</string>
@@ -134,7 +134,19 @@
          <number>0</number>
         </property>
         <item>
-         <widget class="QListView" name="listView"/>
+         <widget class="QTreeWidget" name="tree_all">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <column>
+           <property name="text">
+            <string notr="true">1</string>
+           </property>
+          </column>
+         </widget>
         </item>
        </layout>
       </widget>
@@ -147,7 +159,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>319</width>
+     <width>328</width>
      <height>22</height>
     </rect>
    </property>
