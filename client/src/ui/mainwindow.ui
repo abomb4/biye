@@ -66,6 +66,28 @@
       <property name="tabBarAutoHide">
        <bool>false</bool>
       </property>
+      <widget class="QWidget" name="tab_department">
+       <attribute name="title">
+        <string>部门联系人</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_3">
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QListWidget" name="listWidget_2"/>
+        </item>
+       </layout>
+      </widget>
       <widget class="QWidget" name="tab_recent">
        <attribute name="title">
         <string>最近联系人</string>
@@ -84,35 +106,7 @@
          <number>0</number>
         </property>
         <item>
-         <widget class="QListWidget" name="listWidget">
-          <item>
-           <property name="text">
-            <string extracomment="财务部">dcxcxxccx</string>
-           </property>
-           <property name="icon">
-            <iconset resource="../icons.qrc">
-             <normaloff>:/ui/icons/im-user-online.svg</normaloff>:/ui/icons/im-user-online.svg</iconset>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>sdfdsfd</string>
-           </property>
-           <property name="icon">
-            <iconset resource="../icons.qrc">
-             <normaloff>:/ui/icons/im-user.svg</normaloff>:/ui/icons/im-user.svg</iconset>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>zxcvzxcvvc</string>
-           </property>
-           <property name="icon">
-            <iconset resource="../icons.qrc">
-             <normaloff>:/ui/icons/im-user.svg</normaloff>:/ui/icons/im-user.svg</iconset>
-           </property>
-          </item>
-         </widget>
+         <widget class="QListWidget" name="listWidget"/>
         </item>
        </layout>
       </widget>
@@ -205,9 +199,8 @@
     <bool>true</bool>
    </property>
    <property name="icon">
-    <iconset>
-     <normalon>:/ui/icons/application-exit.svg</normalon>
-    </iconset>
+    <iconset theme="application-exit" resource="../icons.qrc">
+     <normaloff>:/ui/icons/application-exit.svg</normaloff>:/ui/icons/application-exit.svg</iconset>
    </property>
    <property name="text">
     <string>退出(&amp;Q)</string>
@@ -224,7 +217,7 @@
   </action>
   <action name="action_about_qt">
    <property name="text">
-    <string>关于Qt</string>
+    <string>关于&amp;Qt</string>
    </property>
   </action>
   <action name="action_about">

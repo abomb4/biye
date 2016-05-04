@@ -4,6 +4,9 @@
 #include <QString>
 #include "fxmessage.h"
 #include "fxconnection.h"
+#include "structs/user.h"
+#include "structs/department.h"
+#include "structs/chatlog.h"
 
 namespace FxChat {
 namespace FxClient {
@@ -12,10 +15,21 @@ extern uint32_t USER_ID;
 
 FxChatError login(const QString *name, const QString *password);
 
-FxChatError getFullUserList();
-FxChatError getDiffUserList(const QString *timestamp);
+// update db from server, return from db
+FxChatError getUserList(QVector<User> *v);
 
-FxChatError sendMsg(const uint32_t to_user_id);
+// update db from server, return from db
+FxChatError getDepartmentList(QVector<Department> *v);
+
+// get from local db
+FxChatError getRecent(QVector<uint32_t> *v);
+
+// write to local db
+FxChatError addRecent(const uint32_t target_id);
+
+FxChatError getChatLog(const uint32_t target_id);
+
+FxChatError sendMsg(const uint32_t to_user_id, const QString *msg);
 
 }
 }

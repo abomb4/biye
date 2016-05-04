@@ -46,7 +46,7 @@
     userid:11
 
     服务端返回：
-    userlist:[{"id":1,"name":"xxx","true_name":"动词"},{"id":2,"name":"ffff","true_name":"纷纷"}]
+    userlist:[{"id":1,"name":"xxx","true_name":"动词","department":1},{"id":2,"name":"ffff","true_name":"纷纷","department":1}]
 
 3 获取差异用户列表(功能号：3)
     本功能为了减轻每次登录都要获取一次完整列表的开销。服务端根据changelog表返回给客户端改变的数据

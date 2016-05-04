@@ -18,6 +18,13 @@ using std::endl;
 using std::cerr;
 using std::mutex;
 
+ssize_t _fx_tcp_send(int __fd, const void *__buf, size_t __n, int __flags) {
+    ssize_t n = 0;
+    n += send(__fd, __buf, 8, __flags);
+    n += send(__fd, (char*)__buf + 8, __n - 8, __flags);
+    return n;
+}
+
 void dummy(char *a){};
 std::shared_ptr<spdlog::logger> ClientConnection::_logger;
 
@@ -161,7 +168,7 @@ FxChatError ClientConnection::_doRead(char *&body, uint32_t &bodylength, uint16_
         buffer += n;
         need -= n;
     } // body recieved
-
+/*
     // send recieved callback
     char ret[19];
     memset(ret, 0, 19);
@@ -175,7 +182,7 @@ FxChatError ClientConnection::_doRead(char *&body, uint32_t &bodylength, uint16_
         ClientConnection::_logger->info("({}) client closes connection in _doParse()", (void*)this);
         return FxChatError::FXM_SOCKET_ERR;
     }
-
+*/
     // read next package if exists
     if (pagesize > pageno) {
         FxChatError e = this->_doRead(buffer, bodylength, fno, true);
@@ -251,9 +258,9 @@ void ClientConnection::_doSend(FxMessage *x) {
         int tries = 3;
         bool succ = false;
         while (tries--) {
-            n = send(this->_sockfd, packages[i], plengths[i], MSG_NOSIGNAL);
+            n = _fx_tcp_send(this->_sockfd, packages[i], plengths[i], MSG_NOSIGNAL);
             if (n <= 0) {
-                ClientConnection::_logger->error("({}) ERROR writing to socket", (void*)this);
+                ClientConnection::_logger->error("({}) ERROR writing to socket ({})", (void*)this, errno);
                 succ = false;
             } else {
                 succ = true;
@@ -262,6 +269,7 @@ void ClientConnection::_doSend(FxMessage *x) {
         }
         if (!succ)
             return;
+        /*
         n = recv(this->_sockfd, recvbuff, 18, 0);
         if (n < 0) {
             ClientConnection::_logger->error("({}) ERROR reading response pack.", (void*)this);
@@ -271,5 +279,6 @@ void ClientConnection::_doSend(FxMessage *x) {
                 || strncmp(recvbuff + 8, "stat:succ\n", 10) != 0) {
             ClientConnection::_logger->error("({}) ERROR WRONG RESPONSE HEADER!!", (void*)this);
         }
+        */
     }
 }

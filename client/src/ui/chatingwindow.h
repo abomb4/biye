@@ -1,13 +1,13 @@
 #ifndef CHATINGWINDOW_H
 #define CHATINGWINDOW_H
 
-#include <QDialog>
+#include <QMainWindow>
 
 namespace Ui {
 class ChatingWindow;
 }
 
-class ChatingWindow : public QDialog
+class ChatingWindow : public QMainWindow
 {
     Q_OBJECT
 

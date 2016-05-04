@@ -107,7 +107,9 @@ FxChatError FxConnection::send(const FxMessage *x) {
         int tries = 3;
         bool succ = false;
         while (tries--) {
-            n = this->_socket->write(packages[i], plengths[i]);
+            qint64 n = 0;
+            n += this->_socket->write(packages[i], 8);
+            n += this->_socket->write(packages[i] + 8, plengths[i] - 8);
             this->_socket->waitForBytesWritten();
             if (n <= 0) {
                 return FxChatError::FXM_SOCKET_ERR;
@@ -118,6 +120,7 @@ FxChatError FxConnection::send(const FxMessage *x) {
         }
         if (!succ)
             return FxChatError::FXM_SOCKET_ERR;
+        /*
         this->_socket->waitForReadyRead(4000);
         n = this->_socket->read(recvbuff, 18);
         if (n < 0) {
@@ -127,6 +130,7 @@ FxChatError FxConnection::send(const FxMessage *x) {
                 || strncmp(recvbuff + 8, "stat:succ\n", 10) != 0) {
             qDebug() << "NON SUCC!";
         }
+        */
     }
     return FxChatError::FXM_SUCCESS;
 }
@@ -148,11 +152,33 @@ bool FxConnection::connectToHost() {
 }
 
 // private
+
+bool whileread(QAbstractSocket *s, char *buffer, uint32_t size) {
+    uint32_t n = 0;
+    int repeat = 0;
+    while(n < size) {
+        if (s->bytesAvailable() < size) {
+            s->waitForReadyRead(100);
+            repeat++;
+            if (repeat > 40) {
+                qDebug() << "whileread timeout";
+                return false;
+            }
+            continue;
+        }
+        int readed = s->read(buffer, size - n);
+        if (readed < 0) {
+            qDebug() << s->error();
+            return false;
+        } else
+            n += readed;
+    }
+    return true;
+}
+
 FxChatError FxConnection::_doRead(char *&body, uint32_t &bodylength, uint16_t &fno, bool isrecursion) {
-    int n = 0;
     char *buffer_8 = this->_pool->borrow(8);
-    this->_socket->waitForReadyRead(4000);
-    n = this->_socket->read(buffer_8, 8);
+    whileread(this->_socket, buffer_8, 8);
 
     // parse body length and from_user first
     uint16_t msg_body_length = 0;
@@ -184,30 +210,26 @@ FxChatError FxConnection::_doRead(char *&body, uint32_t &bodylength, uint16_t &f
     buffer = body;
 
     // recieve a body
-    int need = msg_body_length;
-    while(need > 0) {
-        n = this->_socket->read(buffer, msg_body_length);
-        if (n < 0) {
-            return FxChatError::FXM_SOCKET_ERR;
-        } else if (n == 0) {
-            return FxChatError::FXM_SOCKET_ERR;
-        }
-        buffer += n;
-        need -= n;
+    if (!whileread(this->_socket, buffer, msg_body_length)) {
+        qDebug() << this->_socket->error();
+        return FxChatError::FXM_SOCKET_ERR;
     } // body recieved
 
+
+    /*
     // send recieved callback
-    char ret[19];
+    char *ret = this->_pool->borrow(sizeof(char) * 19);
     memset(ret, 0, 19);
     memcpy(ret, buffer_8, 8);
     memcpy(ret + 8, "stat:succ\n", 10);
     n = this->_socket->write(ret, 18);
-    this->_socket->waitForBytesWritten();
+    this->_socket->waitForBytesWritten(-1);
     if (n < 0) {
         return FxChatError::FXM_SOCKET_ERR;
     } else if (n == 0) {
         return FxChatError::FXM_FAIL;
     }
+    */
 
     // read next package if exists
     if (pagesize > pageno) {

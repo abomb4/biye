@@ -6,5 +6,6 @@
         <file>ui/icons/im-kick-user.svg</file>
         <file>ui/icons/im-user-online.svg</file>
         <file>images/headicon.png</file>
+        <file>ui/icons/document-save.svg</file>
     </qresource>
 </RCC>

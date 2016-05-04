@@ -2,6 +2,7 @@
 #define USER_H
 
 #include <QString>
+#include <QDateTime>
 
 class User {
 public:
@@ -11,6 +12,9 @@ public:
 
     const QString& name() const { return this->_name; }
     void name(const QString n) { this->_name = n; }
+
+    const QString& email() const { return this->_email; }
+    void email(const QString n) { this->_email = n; }
 
     const QString& password() const { return this->_password; }
     void password(const QString n) { this->_password = n; }
@@ -27,21 +31,22 @@ public:
     char status() const { return this->_status; }
     void status(const char n) { this->_status = n; }
 
-    const QString& gmtCreate() const { return this->_gmt_create; }
-    void gmtCreate(const QString n) { this->_gmt_create = n; }
+    const QDateTime& gmtCreate() const { return this->_gmt_create; }
+    void gmtCreate(const QDateTime n) { this->_gmt_create = n; }
 
-    const QString& gmtModify() const { return this->_gmt_modify; }
-    void gmtModify(const QString n) { this->_gmt_modify = n; }
+    const QDateTime& gmtModify() const { return this->_gmt_modify; }
+    void gmtModify(const QDateTime n) { this->_gmt_modify = n; }
 private:
     uint32_t _id;
     QString _name;
+    QString _email;
     QString _password;
     QString _true_name;
     uint32_t _department;
     QString _icon;
     char _status;
-    QString _gmt_create;
-    QString _gmt_modify;
+    QDateTime _gmt_create;
+    QDateTime _gmt_modify;
 };
 
 #endif // USER_H

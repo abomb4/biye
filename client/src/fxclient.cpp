@@ -1,5 +1,8 @@
 #include "fxclient.h"
 #include <iostream>
+#include <cstdio>
+
+#include "clientdb.h"
 
 using namespace FxChat;
 uint32_t FxClient::USER_ID;
@@ -83,5 +86,102 @@ FxChatError FxClient::login(const QString *name, const QString *password) {
     c->unlock();
     if (!logined)
         delete c;
+    else
+        c->clearPool();
     return e;
+}
+
+FxChatError FxClient::getUserList(QVector<User> *v) {
+    QDateTime now = QDateTime::currentDateTime();
+    FxChatError e = FxChatError::FXM_SUCCESS;
+    FxConnection *c = FxConnection::getServerConnection();
+    c->lock();
+    // TODO 1 getLastUserUpdateTime
+    QString last_time = ClientDB::getInstance()->getLastUserUpdateTime();
+    //      2 if '' get from server, else get diff list from server
+    if (last_time.isEmpty()) {
+        // getall
+        FxMessage *msg = new (c->borrowFromPool(sizeof(FxMessage))) FxMessage();
+        msg->fno(FxFunction::FXF_GetUserListFull);
+        FxMessageParam *param_tmp;
+        // userid
+        {
+            param_tmp = new (c->borrowFromPool(sizeof(FxMessageParam))) FxMessageParam();
+            param_tmp->setName(_pooled_str("userid", 6, c->getPool()), 6);
+            char *idc = new (c->borrowFromPool(sizeof(char[11]))) char[11];
+            sprintf(idc, "%d", USER_ID);
+            param_tmp->setVal(idc, strlen(idc));
+            msg->addParam(param_tmp);
+            param_tmp = nullptr;
+        }
+        e = c->send(msg);
+        if (e != FxChatError::FXM_SUCCESS) { // send fail
+            qDebug() << "SEND FAIL!" << e;
+            c->clearPool();
+            c->unlock();
+            return e;
+        }
+        FxMessage *recvMsg;
+        e = c->recieve(recvMsg);
+        if (e == FxChatError::FXM_SUCCESS) {
+            // convert userlist json to vector
+            const FxMessageParam *p = recvMsg->paramList();
+            if (strcmp(p->getName(c->getPool()), "userlist") != 0) { // error
+
+            } else {
+                v = new QVector<User>();
+                const char *userlist = p->getVal(c->getPool());
+                QJsonDocument json = QJsonDocument::fromJson(userlist);
+                QJsonArray arr = json.array();
+                QJsonObject obj;
+                for (int i = 0; i < arr.size(); i++) {
+                    obj = arr.at(i).toObject();
+                    User u;
+                    u.id(obj["id"].toInt());
+                    u.name(obj["name"].toString());
+                    u.trueName(obj["true_name"].toString());
+                    u.department(obj["department"].toInt());
+                    v->append(u);
+                }
+                ClientDB::getInstance()->addUsers(v);
+            }
+        } else {
+            qDebug() << "RECIEVE FAIL!" << e;
+            c->clearPool();
+            c->unlock();
+            return e;
+        }
+        c->clearPool();
+        c->unlock();
+        last_time = now.toString("yyyyMMddhhmmss");
+        ClientDB::getInstance()->setLastUserUpdateTime(last_time);
+    } else {
+        //      3 if diff list not empty, update db
+        //      4 get from db
+        v = ClientDB::getInstance()->getUsers();
+    }
+    return FXM_SUCCESS;
+}
+
+FxChatError FxClient::getDepartmentList(QVector<Department> *v) {
+
+}
+
+FxChatError FxClient::getRecent(QVector<uint32_t> *v) {
+    v = ClientDB::getInstance()->getRecent(USER_ID);
+    return FXM_SUCCESS;
+}
+
+FxChatError FxClient::addRecent(const uint32_t target_id) {
+    if (ClientDB::getInstance()->addRecent(USER_ID, target_id))
+        return FXM_SUCCESS;
+    else return FXM_FAIL;
+}
+
+FxChatError FxClient::getChatLog(const uint32_t target_id) {
+
+}
+
+FxChatError FxClient::sendMsg(const uint32_t to_user_id, const QString *msg) {
+
 }

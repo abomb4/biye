@@ -124,7 +124,7 @@ void _set_to_login_pack(login_pack *&pack, const char *name, const char *val) {
 }
 
 FxChatError _login(FxMessage *&retmsg, const FxMessage *msg, ClientConnection *c) {
-    _logger()->debug("({}) do login", (void*)c);
+    _logger()->info("({}) do login", (void*)c);
     MemoryPool *pool = c->pool();
 
     login_pack *pack = new (pool->borrow(sizeof(login_pack))) login_pack;
@@ -179,7 +179,7 @@ FxChatError _login(FxMessage *&retmsg, const FxMessage *msg, ClientConnection *c
 ///////////////////////////////////// GetUserListFull
 /// 本方法没有传入参数
 FxChatError _get_user_list_full(FxMessage *&retmsg, const FxMessage *msg, ClientConnection *c) {
-    _logger()->debug("({}) get full user list", (void*)c);
+    _logger()->info("({}) get full user list", (void*)c);
     User *list;
     int count = UserManager::getInstance().getFullList(list, c->pool());
     cJSON_set_pool(c->pool());

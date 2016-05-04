@@ -72,8 +72,9 @@ void afterLoginThread::run() {
     this->finished();
 }
 
-// after login thread finished
+// after login thread finished, on main thread
 void Login::__after_login_finish() {
+    w->initUi();
     w->show();
     delete this;
 }

@@ -4,7 +4,7 @@
 #include <QThread>
 #include <QMutex>
 #include <QVector>
-#include <QAbstractSocket>
+#include <QTcpSocket>
 
 #include "linearmemorypool.h"
 #include "fxmessage.h"
@@ -56,7 +56,8 @@ private:
     // parse
     FxChatError _doParse(char *body, uint32_t &bodylength, uint16_t &fno, FxMessage *&msg);
 
-    QAbstractSocket *_socket;
+    // QAbstractSocket *_socket;
+    QTcpSocket *_socket;
     LinearMemoryPool *_pool;
     QMutex _using_mutex;
     QString _host;

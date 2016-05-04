@@ -70,6 +70,7 @@ void LinearMemoryPool::clear() {
     if (this->_next != nullptr) {
         _logger->debug("({}) Destruct next pool({}).", (void*)this, (void*)this->_next);
         this->_next->~LinearMemoryPool(); // call destructor manually, avoid delete a part of this->_pool
+        this->_next = nullptr;
     }
     this->_current = this->_pool;
 }
