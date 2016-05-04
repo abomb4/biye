@@ -101,9 +101,10 @@ void ClientDB::initdb() {
 ///////////////////////// user /////////////////////////
 QVector<User> *ClientDB::getUsers() {
     QSqlQuery query;
-    query.exec("select id, name, email, true_name, department, icon, gmt_create, gmt_modify"
+    query.exec("select id, name, email, true_name, department, icon, gmt_create, gmt_modify "
                "from fx_user where status = 1");
     QVector<User> *v = new QVector<User>();
+    query.first();
     do {
         User u;
         u.id(query.value(0).toInt());
@@ -183,16 +184,19 @@ bool ClientDB::modifyDepartmentsById(const QVector<Department>*) {}
 QString ClientDB::getLastUserUpdateTime() const {
     QSqlQuery query;
     query.exec("select value from `status` where `key` = 'last_user_update_time'");
+    query.first();
     return query.value(0).toString();
 }
 QString ClientDB::getLastDepartmentUpdateTime() const {
     QSqlQuery query;
     query.exec("select value from `status` where `key` = 'last_department_update_time'");
+    query.first();
     return query.value(0).toString();
 }
 QString ClientDB::getLastUserName() const {
     QSqlQuery query;
     query.exec("select value from `status` where `key` = 'last_user_name'");
+    query.first();
     return query.value(0).toString();
 }
 bool ClientDB::setLastUserUpdateTime(const QString t) {

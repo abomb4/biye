@@ -30,6 +30,7 @@ void _set_to_login_result(loginResult *&result, const char *name, const char *va
 }
 
 FxChatError FxClient::login(const QString *name, const QString *password) {
+    qDebug() << "login()";
     bool logined = false;
     FxChatError e = FxChatError::FXM_SUCCESS;
     FxConnection *c = FxConnection::getServerConnection();
@@ -88,10 +89,12 @@ FxChatError FxClient::login(const QString *name, const QString *password) {
         delete c;
     else
         c->clearPool();
+    qDebug() << "login() finished";
     return e;
 }
 
 FxChatError FxClient::getUserList(QVector<User> *v) {
+    qDebug() << "getUserList()";
     QDateTime now = QDateTime::currentDateTime();
     FxChatError e = FxChatError::FXM_SUCCESS;
     FxConnection *c = FxConnection::getServerConnection();
@@ -160,6 +163,7 @@ FxChatError FxClient::getUserList(QVector<User> *v) {
         //      4 get from db
         v = ClientDB::getInstance()->getUsers();
     }
+    qDebug() << "getUserList() finished";
     return FXM_SUCCESS;
 }
 
