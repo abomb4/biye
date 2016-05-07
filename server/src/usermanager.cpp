@@ -87,3 +87,36 @@ int UserManager::getFullList(User *&return_users, MemoryPool *pool) {
     MysqlConnector::getInstance()->release(con);
     return count;
 }
+
+// check userid exists
+bool UserManager::exists(uint32_t userid) {
+    bool result = false;
+    mysqlpp::Connection *con = MysqlConnector::getInstance()->getConnection();
+    mysqlpp::Query q = con->query();
+    q << "select id from fx_user where id = %0q";
+    q.parse();
+    try {
+        mysqlpp::StoreQueryResult res = q.store(userid);
+        if (res.size() < 1) {
+            result = false;
+        } else {
+            result = true;
+        }
+    } catch (const mysqlpp::BadQuery& er) {
+        // Handle any query errors
+        cerr << "Query error: " << er.what() << endl;
+        result = false;
+    } catch (const mysqlpp::BadConversion& er) {
+        // Handle bad conversions
+        cerr << "Conversion error: " << er.what() << endl <<
+                "\tretrieved data size: " << er.retrieved <<
+                ", actual size: " << er.actual_size << endl;
+        result = false;
+    } catch (const mysqlpp::Exception& er) {
+        // Catch-all for any other MySQL++ exceptions
+        cerr << "Error: " << er.what() << endl;
+        result = false;
+    }
+    MysqlConnector::getInstance()->release(con);
+    return result;
+}

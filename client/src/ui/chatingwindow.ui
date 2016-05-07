@@ -92,7 +92,7 @@
            <number>0</number>
           </property>
           <item>
-           <widget class="QPushButton" name="pushButton">
+           <widget class="QPushButton" name="btn_add_pic">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -121,7 +121,11 @@
         </widget>
        </item>
        <item>
-        <widget class="QTextEdit" name="edt_input"/>
+        <widget class="QTextEdit" name="edt_input">
+         <property name="acceptRichText">
+          <bool>false</bool>
+         </property>
+        </widget>
        </item>
       </layout>
      </widget>

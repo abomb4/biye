@@ -12,7 +12,7 @@
 namespace ClientDB
 {
 void initdb();
-
+void destroydb();
 // user
 QVector<User> *getUsers();
 User *getUserById(uint32_t id);

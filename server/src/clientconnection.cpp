@@ -61,10 +61,10 @@ void ClientConnection::startListener() {
 }
 
 void ClientConnection::_doListen() {
-    char *buffer;
+    char buffer[8];
     bool _breakIt = false;
     while(true) {
-        buffer = this->_pool->borrow(8);
+        // buffer = this->_pool->borrow(8);
         memset(buffer, 0, 8);
         // recieve msg head, MSG_PEEK mode
         int n = recv(this->_sockfd, buffer, 8, MSG_PEEK);
@@ -240,14 +240,14 @@ FxChatError ClientConnection::_doParse(char *body, uint32_t bodylength, uint16_t
     if (is_body) {
         int bodylen = bodylength - (colon_pos + 1 - body);
         p = new (this->_pool->borrow(sizeof(FxMessageParam))) FxMessageParam;
-        p->setName(line_cur, (int)(colon_pos - line_cur - 1)); // minus ':'
+        p->setName(line_cur, (int)(colon_pos - line_cur)); // minus ':'
         p->setVal(colon_pos + 1, bodylen);
         msg->addParam(p);
     }
     return FxChatError::FXM_SUCCESS;
 }
 
-void ClientConnection::_doSend(FxMessage *x) {
+void ClientConnection::_doSend(const FxMessage *x) {
     char **packages;
     int *plengths;
     int package_sum = x->toPackages(packages, plengths, this->_pool);
@@ -281,4 +281,33 @@ void ClientConnection::_doSend(FxMessage *x) {
         }
         */
     }
+}
+
+void ClientConnection::lock() {
+    this->_send_mutex.lock(); // LOCK
+}
+
+void ClientConnection::unlock() {
+    this->_send_mutex.unlock(); // LOCK
+}
+
+FxChatError ClientConnection::readMsg(FxMessage *&msg) {
+    char *bodystr;
+    uint32_t bodylength = 0;
+    uint16_t fno = 0;
+    FxChatError err = this->_doRead(bodystr, bodylength, fno);
+    if (err != FxChatError::FXM_SUCCESS) { // wrong
+        return err;
+    } else {
+        // parse msg
+        err = this->_doParse(bodystr, bodylength, fno, msg);
+        if (err != FXM_SUCCESS) {
+            return err;
+        }
+    }
+    return FXM_SUCCESS;
+}
+FxChatError ClientConnection::sendMsg(const FxMessage *msg) {
+    this->_doSend(msg);
+    return FXM_SUCCESS;
 }

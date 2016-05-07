@@ -7,6 +7,8 @@
 #include <QtWidgets/QHBoxLayout>
 
 #include "structs/user.h"
+#include "chatingwindow.h"
+
 namespace Ui {
 class MainWindow;
 }
@@ -22,15 +24,25 @@ public:
     void initUi();
 
 public slots:
+    // all in main thread
     void closeApp();
     void askClostApp();
     void aboutQt();
     void openChatWindow(QListWidgetItem *item);
+    void chatWindowCloses(quint32 uid); // window initiative close
+    void receiveMsg(quint32 from_user_id, quint32 to_user_id, const QString &msgbody);
+    void toOnline(quint32 uid);
+    void toOffline(quint32 uid);
+
+signals:
+
 private:
     Ui::MainWindow *ui;
     User *_user_self;
-    QVector<User> *_users;
+    QMap<uint32_t, User> *_users;
     QVector<uint32_t> *_recent;
+
+    QMap<uint32_t, ChatingWindow*> _chatwindows;
 };
 
 class ContactWidget;
@@ -56,9 +68,10 @@ public:
     // / //
 
     static Contact* createContact(uint32_t uid, const QString &name);
+    static Contact* getContact(uint32_t uid);
 
 private:
-    static QMap<uint32_t, Contact> _contact_map;
+    static QMap<uint32_t, Contact*> _contact_map;
 };
 
 class ContactWidget : public QWidget {

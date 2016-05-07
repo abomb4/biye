@@ -100,6 +100,8 @@
     3 图片采用base64编码，PNG格式发送，使用‘&p’代表图片开始，'&P'代表图片结束。
 
     发送端：
+    userid:1
+    toid:2
     body:oijfiojasdioioadfsiosdafioj&njiijqwlxcz{}}OW}#90jjkoqiusq39h99uj2lds93of0fk&pJSDIOJFIOWEWEEWR==&P
 
     接收端：

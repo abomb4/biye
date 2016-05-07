@@ -6,6 +6,14 @@ map<unsigned int, UserSession*> UserSession::_uid_session_map;
 map<int, UserSession*> UserSession::_sockfd_session_map;
 BlockedMemoryPool *UserSession::_pool;
 
+bool UserSession::initPool() {
+    int maxconn = atoi(Config::get("connection.max").c_str());
+    if (maxconn < 10)
+        maxconn = 1024;
+    UserSession::_pool = new BlockedMemoryPool(sizeof(UserSession), maxconn);
+    return true;
+}
+
 UserSession *UserSession::getSessionByUid(unsigned int id) {
     return UserSession::_uid_session_map[id];
 }
@@ -17,7 +25,8 @@ bool UserSession::createSession(ClientConnection *con, const User user) {
     if (user.id() == 0)
         return false;
 
-    UserSession *newSession = new (UserSession::_pool->borrow(sizeof(UserSession))) UserSession(con, user);
+    UserSession *newSession = new (UserSession::_pool->borrow(sizeof(UserSession)))
+            UserSession(con, user);
     UserSession::_uid_session_map.insert(std::pair<unsigned int, UserSession *>(user.id(), newSession));
     UserSession::_sockfd_session_map.insert(std::pair<unsigned int, UserSession *>(con->sockfd(), newSession));
 
@@ -56,10 +65,6 @@ bool UserSession::destroySessionBySockFd(int sockfd, bool destroy_connection) {
 UserSession::UserSession(ClientConnection *con, const User u) {
     this->_user = u;
     this->_connection = con;
-    int maxconn = atoi(Config::get("connection.max").c_str());
-    if (maxconn < 10)
-        maxconn = 1024;
-    UserSession::_pool = new BlockedMemoryPool(sizeof(UserSession), maxconn);
 }
 
 UserSession::~UserSession() {

@@ -18,7 +18,10 @@ enum FxFunction : uint16_t {
     FXF_GetDepartmentListDiff = 5,
     FXF_GetOnlineUsers = 6,
     FXF_GetUserDetail = 7,
-    FXF_SendMessage = 8
+    FXF_SendMessage = 8, // server notify and client request
+    FXF_GetOnline = 9,
+    FXF_ToOnline = 10, // server notify
+    FXF_ToOffline = 11 // server notify
 };
 
 class FxMessageParam {
@@ -76,7 +79,7 @@ enum FxChatError : uint16_t {
     FXM_UNKNOWN_FNO             = 6,
     FXM_PAREMETER_CHECK_FAIL    = 7,
     FXM_TIME_OUT                = 8,
-    FXM_NO_RESPONSE_RECIEVED    = 9,
+    FXM_NO_RESPONSE_RECEIVED    = 9,
 };
 
 }

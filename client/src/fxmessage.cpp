@@ -110,7 +110,7 @@ void _make_header(char *&buffer, uint16_t len, uint16_t psize, uint16_t pno, uin
     buffer += 8;
 }
 
-void _add_to_body(char **packages, int *plengths, char *&buffer_c, const char *src, int src_length, uint16_t pagesize, uint16_t &pageno, uint16_t fno, int full_len, int &current_len) {
+void _add_to_body(char **&packages, int *plengths, char *&buffer_c, const char *src, int src_length, uint16_t pagesize, uint16_t &pageno, uint16_t fno, int full_len, int &current_len) {
     uint16_t msglen = 0; // first  2 byte
     if (full_len < FXMESSAGE_BLOCK_SIZE) {
         msglen = full_len;
@@ -121,6 +121,11 @@ void _add_to_body(char **packages, int *plengths, char *&buffer_c, const char *s
         msglen = FXMESSAGE_BLOCK_SIZE;
     }
 
+    if (current_len == 0) { // make first header
+        packages[pageno - 1] = buffer_c;
+        _make_header(buffer_c, htons(msglen), htons(pagesize), htons(pageno), htons(fno));
+        plengths[pageno - 1] = msglen + 8;
+    }
     // border
     if (current_len + src_length > FXMESSAGE_BLOCK_SIZE) {
         int x = FXMESSAGE_BLOCK_SIZE - current_len;
@@ -129,11 +134,6 @@ void _add_to_body(char **packages, int *plengths, char *&buffer_c, const char *s
         current_len = 0;
         _add_to_body(packages, plengths, buffer_c, src + x, src_length - x, pagesize, pageno, fno, full_len, current_len);
     } else { // normal
-        if (current_len == 0) { // make first header
-            packages[pageno - 1] = buffer_c;
-            _make_header(buffer_c, htons(msglen), htons(pagesize), htons(pageno), htons(fno));
-            plengths[pageno - 1] = msglen + 8;
-        }
         _append(buffer_c, src, src_length);
         current_len += src_length;
     }

@@ -35,6 +35,7 @@ private slots:
 private:
     Ui::Login *ui;
     bool __logining;
+    bool __logined;
     MainWindow *w;
 };
 

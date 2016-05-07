@@ -29,7 +29,7 @@ private:
     uint32_t _id;
     uint32_t _sourceid;
     uint32_t _targetid;
-    char _type; // 1 send 2 recieve
+    char _type; // 1 send 2 receive
     QString _msg;
     QDateTime _gmtcreate;
 };

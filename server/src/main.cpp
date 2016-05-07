@@ -21,6 +21,7 @@
 #include "mysqlconnector.h"
 
 #include "usermanager.h"
+#include "usersession.h"
 
 using std::cout;
 using std::endl;
@@ -155,6 +156,8 @@ int main(int argc, char *argv[])
         Config::load("/home/x4x/Workspace/biye/server/src/default.cfg");
         // regist loggers
         registLoggers();
+        // init UserSession::_pool
+        UserSession::initPool();
 
         // fork to background
         // pid_t pid = fork();

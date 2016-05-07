@@ -14,10 +14,15 @@ Login::Login(QWidget *parent) : QDialog(parent), ui(new Ui::Login) {
     QObject::connect(ui->btn_login, SIGNAL(clicked()), this, SLOT(_do_login()));
 
     this->__logining = false;
+    this->__logined = false;
 }
 
 Login::~Login() {
     delete ui;
+    if (!this->__logined) {
+        FxClient::quitApplication();
+    }
+    qDebug() << "~Login()";
 }
 
 // slot, when btn_login clicked, on main thread
@@ -48,6 +53,7 @@ void Login::__login_finish(unsigned short e) {
         connect(t, SIGNAL(finished()), this, SLOT(__after_login_finish()), Qt::QueuedConnection);
         QThreadPool::globalInstance()->start(t);
         this->__logining = true;
+        this->__logined = true;
     } else {
         switch(e) {
         case FxChatError::FXM_FAIL:

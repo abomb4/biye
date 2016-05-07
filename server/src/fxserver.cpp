@@ -5,6 +5,7 @@
 #include <spdlog/spdlog.h>
 
 #include "usermanager.h"
+#include "usersession.h"
 #include "fxcjson.h"
 
 namespace FxChat {
@@ -163,6 +164,9 @@ FxChatError _login(FxMessage *&retmsg, const FxMessage *msg, ClientConnection *c
     }
     // deal with userid
     if (succ) {
+        User user;
+        user.id(userid);
+        UserSession::createSession(c, user);
         param = new (pool->borrow(sizeof(FxMessageParam))) FxMessageParam();
         param->setName("userid", 6);
         char *uid = new (pool->borrow(sizeof(char) * 11)) char[11];
@@ -171,13 +175,14 @@ FxChatError _login(FxMessage *&retmsg, const FxMessage *msg, ClientConnection *c
         retmsg->addParam(param);
         param = nullptr;
     }
+    _logger()->info("({}) do login finish", (void*)c);
 
     return FxChatError::FXM_SUCCESS;
 }
 // Login end
 
 ///////////////////////////////////// GetUserListFull
-/// 本方法没有传入参数
+/// 本方法没有传入参数 ///
 FxChatError _get_user_list_full(FxMessage *&retmsg, const FxMessage *msg, ClientConnection *c) {
     _logger()->info("({}) get full user list", (void*)c);
     User *list;
@@ -204,6 +209,7 @@ FxChatError _get_user_list_full(FxMessage *&retmsg, const FxMessage *msg, Client
         param = nullptr;
     }
 
+    _logger()->info("({}) get full user list finish", (void*)c);
     return FxChatError::FXM_SUCCESS;
 }
 // GetUserListFull end
@@ -244,8 +250,67 @@ FxChatError _get_user_detail(FxMessage *&retmsg, const FxMessage *msg, ClientCon
 // GetUserDetail end
 
 ///////////////////////////////////// SendMessage
+typedef struct _s_msg_pack {
+    uint32_t userid;
+    uint32_t toid;
+    const char *body;
+} msg_pack;
+void _set_to_msg_pack(msg_pack *&pack, const char *name, const char *val) {
+    if (strcmp(name, "userid") == 0)
+        pack->userid = strtoul(val, 0, 0);
+    else if (strcmp(name, "toid") == 0)
+        pack->toid = atoi(val);
+    else if (strcmp(name, "body") == 0)
+        pack->body = val;
+}
 FxChatError _send_message(FxMessage *&retmsg, const FxMessage *msg, ClientConnection *c) {
+    _logger()->info("({}) send message", (void*)c);
+    bool succ = true;
+    MemoryPool *pool = c->pool();
 
+    msg_pack *pack = new (pool->borrow(sizeof(msg_pack))) msg_pack;
+    const FxMessageParam *param_list = msg->paramList();
+    while (param_list != nullptr) {
+        _set_to_msg_pack(pack, param_list->getName(pool), param_list->getVal(pool));
+        param_list = param_list->_next;
+    }
+    // check param
+    if (pack->userid == 0 || pack->toid == 0 || pack->body == nullptr || pack->userid == pack->toid)
+        return FxChatError::FXM_PAREMETER_CHECK_FAIL;
+
+    // check to_user_id exists
+    if (!UserManager::getInstance().exists(pack->toid)) {
+        // pack fail and send back, return
+        return FXM_USER_NOT_EXIST;
+    }
+    // find connection of to_user_id
+    UserSession *s = UserSession::getSessionByUid(pack->toid);
+    if (s == nullptr) {
+        // save to database
+        _logger()->error("Need save to datbase, but not implements.");
+    } else {
+        // send to this user
+        s->connection()->lock();
+        s->connection()->sendMsg(msg);
+        s->connection()->pool()->clear();
+        s->connection()->unlock();
+    }
+
+    retmsg = new (pool->borrow(sizeof(FxMessage))) FxMessage();
+    FxMessageParam *param;
+    // deal with stat
+    {
+        param = new (pool->borrow(sizeof(FxMessageParam))) FxMessageParam();
+        param->setName("stat", 4);
+        if (succ) { // login success
+            param->setVal("succ", 4);
+        } else { // login fail
+            param->setVal("fail", 4);
+        }
+        retmsg->addParam(param);
+        param = nullptr;
+    }
+    _logger()->info("({}) send message finish", (void*)c);
     return FxChatError::FXM_SUCCESS;
 }
 // SendMessage end

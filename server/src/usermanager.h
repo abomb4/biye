@@ -16,6 +16,9 @@ public:
     // modify by id
     bool modify(User u);
 
+    // check userid exists
+    bool exists(uint32_t userid);
+
     ///
     /// \brief getList
     /// \param u condition

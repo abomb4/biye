@@ -12,6 +12,7 @@ class LinearMemoryPool : public MemoryPool
 {
 public:
     LinearMemoryPool(int size);
+    LinearMemoryPool(int size, int basesize);
     ~LinearMemoryPool();
     char* borrow(int size);
     void restore(char *addr);
@@ -20,6 +21,7 @@ private:
     char *_pool;
     char *_current;
     int _size;
+    int _basesize;
     LinearMemoryPool *_next;
 };
 

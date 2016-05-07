@@ -83,7 +83,7 @@ void _append(char *&buffer_c, const char *src, int length) {
 }
 
 // NEED bodyLength() byte memory !!!
-bool FxMessage::bodyStr(char *buffer, unsigned int length) {
+bool FxMessage::bodyStr(char *buffer, unsigned int length) const {
     if (length < this->bodyLength())
         return false;
 
@@ -139,7 +139,7 @@ void _add_to_body(char **&packages, int *plengths, char *&buffer_c, const char *
     }
 }
 
-int FxMessage::toPackages(char **&packages, int *&plengths, MemoryPool *pool) {
+int FxMessage::toPackages(char **&packages, int *&plengths, MemoryPool *pool) const {
     int body_length = this->__bodylength;
     uint16_t package_sum = (body_length - 1) / FXMESSAGE_BLOCK_SIZE + 1;
     if (package_sum > FXMESSAGE_BLOCK_MAX)

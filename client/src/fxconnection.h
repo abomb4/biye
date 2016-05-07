@@ -24,11 +24,14 @@ public:
     FxConnection(const QString &host, const short &port, bool connect = true);
     ~FxConnection();
 
-    bool isConnectetd() { return this->_socket->state() == QAbstractSocket::SocketState::ConnectedState; };
-    void lock() { this->_using_mutex.lock(); }
-    void unlock() { this->_using_mutex.unlock(); }
+    bool waitForReadyRead(int ms);
+    bool isConnectetd();
+    bool haveMsg();
+    bool operating();
+    void lock();
+    void unlock();
 
-    FxChatError recieve(FxMessage *&buffer);
+    FxChatError receive(FxMessage *&buffer);
     FxChatError send(const FxMessage *data);
 
     bool connectToHost();
@@ -45,6 +48,7 @@ signals:
     void destoried();
     void connected();
     void disconnected();
+    void readyRead();
 
 private:
     static QVector<FxConnection*> _connections;
@@ -60,6 +64,7 @@ private:
     QTcpSocket *_socket;
     LinearMemoryPool *_pool;
     QMutex _using_mutex;
+    bool _operating;
     QString _host;
     short _port;
 
@@ -67,8 +72,9 @@ public slots:
     static void _remove_connection_reg(FxConnection *);
     static void _new_connection_reg(FxConnection *);
 
-    void __connected_slot() { this->connected(); }
-    void __disconnected_slot() { this->disconnected(); }
+    void __connected_slot() { qDebug() << "connected"; this->connected(); }
+    void __disconnected_slot() { qDebug() << "disconnected"; this->disconnected(); }
+    void __read_read_slot() { qDebug() << "readyread"; this->readyRead(); }
 };
 
 #endif // FXCONNECTION_H

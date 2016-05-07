@@ -52,8 +52,10 @@ FxConnection::FxConnection(const QString &host, const short &port, bool connects
     this->_port = port;
     this->_pool = new LinearMemoryPool(FX_CONNECTION_POOL_SIZE);
     this->_socket = new QTcpSocket();
+    this->_operating = false;
     connect(this->_socket, SIGNAL(connected()), this, SLOT(__connected_slot()));
     connect(this->_socket, SIGNAL(disconnected()), this, SLOT(__disconnected_slot()));
+    connect(this->_socket, SIGNAL(readyRead()), this, SLOT(__read_read_slot()));
     this->created();
     if (connects) {
         this->_socket->connectToHost(this->_host, this->_port);
@@ -72,12 +74,37 @@ FxConnection::~FxConnection() {
     this->destoried();
 }
 
+bool FxConnection::waitForReadyRead(int ms) {
+    return this->_socket->waitForReadyRead(ms);
+}
+
+bool FxConnection::isConnectetd() {
+    return this->_socket->state() == QAbstractSocket::SocketState::ConnectedState;
+};
+bool FxConnection::haveMsg() {
+    bool sb = this->_socket->waitForReadyRead(1);
+    qint64 x = this->_socket->bytesAvailable();
+    return x > 0;
+}
+bool FxConnection::operating() {
+    return this->_operating;
+}
+void FxConnection::lock() {
+    this->_using_mutex.lock();
+    this->_operating = true;
+}
+void FxConnection::unlock() {
+    this->_operating = false;
+    this->_using_mutex.unlock();
+}
+
+
 ///
-/// \brief FxConnection::recieve 接收一个message
+/// \brief FxConnection::receive 接收一个message
 /// \param msgbuff
 /// \return
 ///
-FxChatError FxConnection::recieve(FxMessage *&msgbuff) {
+FxChatError FxConnection::receive(FxMessage *&msgbuff) {
     char *bodystr;
     uint32_t bodylength = 0;
     uint16_t fno = 0;
@@ -124,7 +151,7 @@ FxChatError FxConnection::send(const FxMessage *x) {
         this->_socket->waitForReadyRead(4000);
         n = this->_socket->read(recvbuff, 18);
         if (n < 0) {
-            return FxChatError::FXM_NO_RESPONSE_RECIEVED;
+            return FxChatError::FXM_NO_RESPONSE_RECEIVED;
         }
         if (strncmp(packages[i], recvbuff, 8) != 0
                 || strncmp(recvbuff + 8, "stat:succ\n", 10) != 0) {
@@ -140,6 +167,7 @@ char *FxConnection::borrowFromPool(int size) {
 }
 
 void FxConnection::clearPool() {
+    qDebug() << "LinearMemoryPool.clearPool();";
     this->_pool->clear();
 }
 LinearMemoryPool *FxConnection::getPool() {
@@ -153,7 +181,7 @@ bool FxConnection::connectToHost() {
 
 // private
 
-bool whileread(QAbstractSocket *s, char *buffer, uint32_t size) {
+bool whileread(QAbstractSocket *s, char *&buffer, uint32_t size) {
     uint32_t n = 0;
     int repeat = 0;
     while(n < size) {
@@ -209,15 +237,15 @@ FxChatError FxConnection::_doRead(char *&body, uint32_t &bodylength, uint16_t &f
     }
     buffer = body;
 
-    // recieve a body
+    // receive a body
     if (!whileread(this->_socket, buffer, msg_body_length)) {
         qDebug() << this->_socket->error();
         return FxChatError::FXM_SOCKET_ERR;
-    } // body recieved
+    } // body received
 
 
     /*
-    // send recieved callback
+    // send received callback
     char *ret = this->_pool->borrow(sizeof(char) * 19);
     memset(ret, 0, 19);
     memcpy(ret, buffer_8, 8);
@@ -233,6 +261,7 @@ FxChatError FxConnection::_doRead(char *&body, uint32_t &bodylength, uint16_t &f
 
     // read next package if exists
     if (pagesize > pageno) {
+        buffer += msg_body_length;
         FxChatError e = this->_doRead(buffer, bodylength, fno, true);
         if (e != FXM_SUCCESS) {
             return e;
@@ -287,7 +316,7 @@ FxChatError FxConnection::_doParse(char *body, uint32_t &bodylength, uint16_t &f
     if (is_body) {
         int bodylen = bodylength - (colon_pos + 1 - body);
         p = new (this->_pool->borrow(sizeof(FxMessageParam))) FxMessageParam;
-        p->setName(line_cur, (int)(colon_pos - line_cur - 1)); // minus ':'
+        p->setName(line_cur, (int)(colon_pos - line_cur)); // minus ':'
         p->setVal(colon_pos + 1, bodylen);
         msg->addParam(p);
     }

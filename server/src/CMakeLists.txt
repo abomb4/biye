@@ -51,6 +51,7 @@ add_library(libFxServer
     usermanager.cpp
     user.h
     usersession.cpp
+    chatlogmanager.cpp
 )
 
 add_executable(fxserver main.cpp)

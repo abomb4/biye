@@ -23,6 +23,11 @@ public:
     const int sockfd() const { return this->_sockfd; }
 
     void startListener();
+
+    void lock();
+    void unlock();
+    FxChatError readMsg(FxMessage *&msg);
+    FxChatError sendMsg(const FxMessage *msg);
 private:
     static std::shared_ptr<spdlog::logger> _logger;
     int _sockfd; // socket
@@ -39,7 +44,7 @@ private:
     FxChatError _doParse(char *body, uint32_t bodylength, uint16_t fno, FxMessage *&msg);
 
     // send msg
-    void _doSend(FxMessage *x);
+    void _doSend(const FxMessage *x);
 
     // default pool
     MemoryPool *_pool;

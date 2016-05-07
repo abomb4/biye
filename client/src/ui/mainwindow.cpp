@@ -4,7 +4,6 @@
 #include <QMessageBox>
 
 #include "clientdb.h"
-#include "chatingwindow.h"
 #include "fxclient.h"
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -19,10 +18,12 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow() {
     delete ui;
+    FxClient::quitApplication();
 }
 
 //
 void MainWindow::initData() {
+    FxClient *c = FxClient::getInstance();
     // TODO 1 get all user list from db
     FxChatError e;
     e = FxChat::FxClient::getUserList(this->_users);
@@ -34,16 +35,37 @@ void MainWindow::initData() {
     //      3 get recent list from db
     e = FxChat::FxClient::getRecent(this->_recent);
     //      4 get online list from server
+
+    //      5 connect server side positive message slot
+    connect(c, SIGNAL(receiveMsg(quint32,quint32,QString)),
+            this, SLOT(receiveMsg(quint32,quint32,QString)),
+            Qt::QueuedConnection);
+
+    connect(c, SIGNAL(online(quint32)),
+            this, SLOT(toOnline(quint32)),
+            Qt::QueuedConnection);
+
+    connect(c, SIGNAL(offline(quint32)),
+            this, SLOT(toOffline(quint32)),
+            Qt::QueuedConnection);
+
+    FxClient::startListenMsg();
 }
 
 void MainWindow::initUi() {
     // 0 init department tree
     // 1 place users to list
-    QVector<User>::const_iterator i;
+    QMap<uint32_t, User>::const_iterator i;
     for (i = this->_users->constBegin(); i != this->_users->constEnd(); i++) {
         ContactManager::Contact *c = ContactManager::createContact(i->id(), i->trueName());
         ContactWidget *w;
 
+        // self
+        if (i->id() == this->_user_self->id()) {
+            c->toOnline();
+            w = c->createWidget();
+            ui->c_self->layout()->addWidget(w);
+        }
         // add to all list
         w = c->createWidget();
         QListWidgetItem *item = new QListWidgetItem(ui->list_recent);
@@ -69,7 +91,7 @@ void MainWindow::initUi() {
 
 // slot
 void MainWindow::closeApp() {
-    this->close();
+    delete this;
 }
 
 void MainWindow::askClostApp() {
@@ -92,15 +114,45 @@ void MainWindow::aboutQt() {
 
 void MainWindow::openChatWindow(QListWidgetItem *item) {
     uint32_t userid = ((ContactWidget*)(item->listWidget()->itemWidget(item)))->userid();
-    QString s;
-    QMessageBox msgBox;
-    msgBox.setWindowTitle("chat");
-    msgBox.setText(s.sprintf("chat to %d？", userid));
-    msgBox.setStandardButtons(QMessageBox::Close);
-    msgBox.exec();
-    ChatingWindow *c = new ChatingWindow(this);
+    if (_chatwindows.contains(userid)) {
+        _chatwindows.value(userid)->show();
+        return;
+    }
+    ChatingWindow *c = new ChatingWindow();
+    _chatwindows.insert(userid, c);
+    c->touserid(userid);
     c->show();
 }
+void MainWindow::chatWindowCloses(quint32 uid) {
+    _chatwindows.remove(uid);
+}
+
+void MainWindow::receiveMsg(quint32 from_user_id, quint32 to_user_id, const QString &msgbody) {
+    qDebug() << "MainWIndow Recieved";
+    if (to_user_id != this->_user_self->id()) {
+        qDebug() << "THIS IS A SERVER FAULT! SERVER SEND ANOTHER USER's MSG TO THIS CLINET!";
+        return;
+    }
+
+    ChatingWindow *c = _chatwindows.value(from_user_id, nullptr);
+    if (c == nullptr) {
+        c = new ChatingWindow();
+        _chatwindows.insert(from_user_id, c);
+        c->touserid(from_user_id);
+        c->appendMsg(_users->value(from_user_id).trueName(), msgbody, QDateTime::currentDateTime());
+        c->show();
+    } else {
+        c->appendMsg(_users->value(from_user_id).trueName(), msgbody, QDateTime::currentDateTime());
+    }
+}
+
+void MainWindow::toOnline(quint32 uid) {
+    ContactManager::getContact(uid)->toOnline();
+}
+void MainWindow::toOffline(quint32 uid) {
+    ContactManager::getContact(uid)->toOffline();
+}
+
 
 
 // ContactManager and Contact and ContactWidget
@@ -116,6 +168,8 @@ ContactWidget *ContactManager::Contact::createWidget() {
     ContactWidget *w = new ContactWidget(this);
     w->name(this->_name);
     w->userid(this->_userid);
+    if (this->_online)
+        w->toOnline();
     this->_widgets->append(w);
     return w;
 }
@@ -128,12 +182,14 @@ void ContactManager::Contact::removeWidget(ContactWidget *w) {
 }
 
 void ContactManager::Contact::toOnline() {
+    this->_online = true;
     QVector<ContactWidget*>::const_iterator i;
     for (i = this->_widgets->begin(); i != this->_widgets->end(); i++) {
         (*i)->toOnline();
     }
 };
 void ContactManager::Contact::toOffline() {
+    this->_online = false;
     QVector<ContactWidget*>::iterator i;
     for (i = this->_widgets->begin(); i != this->_widgets->end(); i++) {
         (*i)->toOffline();
@@ -141,14 +197,17 @@ void ContactManager::Contact::toOffline() {
 };
 
 // ContactManager
-QMap<uint32_t, ContactManager::Contact> ContactManager::_contact_map;
+QMap<uint32_t, ContactManager::Contact*> ContactManager::_contact_map;
 
 ContactManager::Contact* ContactManager::createContact(uint32_t uid, const QString &name) {
     if (!_contact_map.contains(uid)) {
-        Contact c(uid, name);
-        return &_contact_map.insert(uid, c).value();
+        Contact *c = new Contact(uid, name);
+        return _contact_map.insert(uid, c).value();
     }
-    return &_contact_map.find(uid).value();
+    return _contact_map.find(uid).value();
+}
+ContactManager::Contact* ContactManager::getContact(uint32_t uid) {
+    return _contact_map.value(uid);
 }
 
 // Widget
@@ -177,10 +236,6 @@ ContactWidget::ContactWidget(ContactManager::Contact *p, QWidget* parent, Qt::Wi
 ContactWidget::~ContactWidget() {
     this->_create_from->removeWidget(this);
     this->~QWidget();
-    delete this->_icon;
-    delete this->_name;
-    delete this->_layout;
-    delete this->_spacer;
 }
 
 void ContactWidget::toOnline() {

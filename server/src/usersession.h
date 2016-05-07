@@ -14,6 +14,7 @@ using std::map;
 class UserSession
 {
 public:
+    static bool initPool();
     static UserSession *getSessionByUid(unsigned int id);
     static UserSession *getSessionBySockFd(int id);
     static bool createSession(ClientConnection *con, const User user);
@@ -24,7 +25,7 @@ public:
     ~UserSession();
 
     const User user() const { return this->_user; }
-    const ClientConnection *connection() const { return this->_connection; }
+    ClientConnection *connection() const { return this->_connection; }
 
 private:
     static map<unsigned int, UserSession*> _uid_session_map;
@@ -36,6 +37,7 @@ private:
 
     ClientConnection *_connection; // pointer to obj
     User _user;
+    char *_sessionid;
 };
 
 #endif // USERSESSION_H
