@@ -16,13 +16,18 @@ public:
     ~ChatingWindow();
     void touserid(uint32_t userid) { this->_to_user_id = userid; }
     uint32_t touserid() const { return this->_to_user_id; }
+    void setContactWidget(QWidget *contact);
 
     void appendMsg(const QString &username, const QString &msg, const QDateTime &time);
+
+    virtual void closeEvent ( QCloseEvent * event );
 
 private:
     uint32_t _to_user_id;
     Ui::ChatingWindow *ui;
 
+signals:
+    void destoryd(quint32 x);
 public slots:
     // must run as main thread
     void receiveMsg(uint32_t from_user_id, uint32_t to_user_id, const QString &msgbody);

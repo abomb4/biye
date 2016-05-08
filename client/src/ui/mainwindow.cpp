@@ -88,6 +88,9 @@ void MainWindow::initUi() {
     // 2 refresh online
 }
 
+void MainWindow::closeEvent(QCloseEvent *event) {
+
+}
 
 // slot
 void MainWindow::closeApp() {
@@ -119,8 +122,10 @@ void MainWindow::openChatWindow(QListWidgetItem *item) {
         return;
     }
     ChatingWindow *c = new ChatingWindow();
-    _chatwindows.insert(userid, c);
     c->touserid(userid);
+    c->setContactWidget(ContactManager::getContact(userid)->createWidget());
+    connect(c, SIGNAL(destoryd(quint32)), this, SLOT(chatWindowCloses(quint32)));
+    _chatwindows.insert(userid, c);
     c->show();
 }
 void MainWindow::chatWindowCloses(quint32 uid) {
@@ -235,7 +240,7 @@ ContactWidget::ContactWidget(ContactManager::Contact *p, QWidget* parent, Qt::Wi
 
 ContactWidget::~ContactWidget() {
     this->_create_from->removeWidget(this);
-    this->~QWidget();
+    // this->~QWidget();
 }
 
 void ContactWidget::toOnline() {

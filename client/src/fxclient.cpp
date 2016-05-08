@@ -2,7 +2,7 @@
 #include <iostream>
 #include <cstdio>
 
-#include "QApplication"
+#include <QApplication>
 
 #include "clientdb.h"
 #include "fxconnection.h"
@@ -20,14 +20,17 @@ FxClient::FxClient() {
     FxConnection *c = FxConnection::getServerConnection();
 }
 FxClient::~FxClient() {
-    ClientDB::destroydb();
 }
 
 void FxClient::quitApplication() {
-    _instance->~FxClient();
+    delete _instance;
     _instance = nullptr;
+    stopHeartBeat();
+    stopListenMsg();
+    delete FxConnection::getServerConnection();
     ClientDB::destroydb();
-    QApplication::exit(0);
+    qApp->quit();
+    qApp->exit();
 }
 
 uint32_t FxClient::USER_ID;
@@ -181,8 +184,6 @@ FxChatError FxClient::getUserList(QMap<uint32_t, User> *&v) {
             c->unlock();
             return e;
         }
-        c->clearPool();
-        c->unlock();
         last_time = now.toString("yyyyMMddhhmmss");
         ClientDB::setLastUserUpdateTime(last_time);
     } else {
@@ -297,7 +298,7 @@ ListenThread *_lt = nullptr;
 bool FxClient::startListenMsg() {
     if (_lt == nullptr) {
         _lt = new ListenThread(FxClient::getInstance());
-        QThreadPool::globalInstance()->start(_lt);
+        _lt->start();
         return true;
     } else
         return false;
@@ -308,7 +309,9 @@ bool FxClient::stopListenMsg() {
     if (_lt == nullptr)
         return false;
     else {
-        QThreadPool::globalInstance()->cancel(_lt);
+        _lt->terminate();
+        _lt->wait();
+        delete _lt;
         _lt = nullptr;
         return true;
     }
@@ -318,7 +321,7 @@ HeartBeatThread *_ht = nullptr;
 bool FxClient::startHeartBeat() {
     if (_ht == nullptr) {
         _ht = new HeartBeatThread();
-        QThreadPool::globalInstance()->start(_ht);
+        _ht->start();
         return true;
     } else
         return false;
@@ -328,7 +331,9 @@ bool FxClient::stopHeartBeat() {
     if (_ht == nullptr)
         return false;
     else {
-        QThreadPool::globalInstance()->cancel(_ht);
+        _ht->terminate();
+        _lt->wait();
+        delete _ht;
         _ht = nullptr;
         return true;
     }

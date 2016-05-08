@@ -23,6 +23,8 @@ public:
     void initData();
     void initUi();
 
+    virtual void closeEvent(QCloseEvent *event);
+
 public slots:
     // all in main thread
     void closeApp();

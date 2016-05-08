@@ -24,9 +24,13 @@ ChatingWindow::ChatingWindow(QWidget *parent) :
     connect(ui->btn_send, SIGNAL(clicked(bool)), this, SLOT(_do_send_msg()));
 }
 
-ChatingWindow::~ChatingWindow()
-{
+ChatingWindow::~ChatingWindow() {
+    this->destoryd(this->_to_user_id);
     delete ui;
+}
+
+void ChatingWindow::closeEvent(QCloseEvent *event) {
+    delete this;
 }
 
 void ChatingWindow::_do_add_picture() {
@@ -55,6 +59,12 @@ void ChatingWindow::_do_add_picture() {
     imageFormat.setName( Uri.toString() );
 
     cursor.insertImage(imageFormat);
+}
+
+
+void ChatingWindow::setContactWidget(QWidget *contact) {
+    contact->setParent(this);
+    this->ui->c_contact->layout()->addWidget(contact);
 }
 
 QString toFxBody(const QString &txts, const QStringList &images) {

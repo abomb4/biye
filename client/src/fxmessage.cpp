@@ -1,10 +1,11 @@
 #include "fxmessage.h"
 
+#include <QtEndian>
+
 #include <new>
 #include <cstdint>
 #include <cstring>
 #include <cstdio>
-#include <arpa/inet.h>
 
 using namespace FxChat;
 
@@ -123,7 +124,8 @@ void _add_to_body(char **&packages, int *plengths, char *&buffer_c, const char *
 
     if (current_len == 0) { // make first header
         packages[pageno - 1] = buffer_c;
-        _make_header(buffer_c, htons(msglen), htons(pagesize), htons(pageno), htons(fno));
+
+        _make_header(buffer_c, qToBigEndian(msglen), qToBigEndian(pagesize), qToBigEndian(pageno), qToBigEndian(fno));
         plengths[pageno - 1] = msglen + 8;
     }
     // border

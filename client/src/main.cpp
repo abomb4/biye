@@ -21,6 +21,5 @@ int main(int argc, char *argv[])
     ClientDB::initdb();
     Login *w = new Login();
     w->show();
-
     return a.exec();
 }

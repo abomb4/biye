@@ -57,23 +57,21 @@ signals:
     void offline(quint32 userid);
 };
 
-class HeartBeatThread : public QObject, public QRunnable {
+class HeartBeatThread : public QThread {
     Q_OBJECT
 public:
     HeartBeatThread() {
-        this->setAutoDelete(true);
     }
     void run();
 private:
     FxClient *_client;
 };
 
-class ListenThread : public QObject, public QRunnable {
+class ListenThread : public QThread {
     Q_OBJECT
 public:
     ListenThread(FxClient *c) {
         this->_client = c;
-        this->setAutoDelete(true);
     }
     void run();
 private:

@@ -43,6 +43,30 @@
      <number>0</number>
     </property>
     <item>
+     <widget class="QWidget" name="c_contact" native="true">
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>24</height>
+       </size>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout_3">
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+      </layout>
+     </widget>
+    </item>
+    <item>
      <widget class="QTextEdit" name="edt_show">
       <property name="readOnly">
        <bool>true</bool>
@@ -192,7 +216,6 @@
    </widget>
    <addaction name="menu"/>
   </widget>
-  <widget class="QStatusBar" name="statusbar"/>
   <widget class="QToolBar" name="toolBar">
    <property name="windowTitle">
     <string>toolBar</string>
@@ -216,6 +239,7 @@
     <bool>false</bool>
    </attribute>
    <addaction name="action_Save"/>
+   <addaction name="action_close"/>
   </widget>
   <action name="action_Save">
    <property name="icon">
@@ -224,6 +248,15 @@
    </property>
    <property name="text">
     <string>保存(&amp;S)</string>
+   </property>
+  </action>
+  <action name="action_close">
+   <property name="icon">
+    <iconset theme="application-exit" resource="../icons.qrc">
+     <normaloff>:/ui/icons/application-exit.svg</normaloff>:/ui/icons/application-exit.svg</iconset>
+   </property>
+   <property name="text">
+    <string>关闭(&amp;C)</string>
    </property>
   </action>
  </widget>
