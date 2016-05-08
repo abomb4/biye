@@ -34,6 +34,8 @@ FxChatError doOperation(FxMessage *&retmsg, const FxMessage *msg, ClientConnecti
 ///
 void makeFailureMsg(FxMessage *&retmsg, FxChatError e, MemoryPool *pool, uint32_t from_user = 0);
 
+void notifyOnline(uint32_t userid);
+void notifyOffline(uint32_t userid);
 }
 }
 

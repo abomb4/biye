@@ -202,6 +202,56 @@ FxChatError FxClient::getUserList(QMap<uint32_t, User> *&v) {
     qDebug() << "getUserList() finished";
     return FXM_SUCCESS;
 }
+FxChatError FxClient::getOnline(QVector<uint32_t> *&v) {
+    // getall
+    FxChatError e = FxChatError::FXM_SUCCESS;
+    FxConnection *c = FxConnection::getServerConnection();
+    FxMessage *msg = new (c->borrowFromPool(sizeof(FxMessage))) FxMessage();
+    msg->fno(FxFunction::FXF_GetOnlineUsers);
+    FxMessageParam *param_tmp;
+    // userid
+    {
+        param_tmp = new (c->borrowFromPool(sizeof(FxMessageParam))) FxMessageParam();
+        param_tmp->setName(_pooled_str("userid", 6, c->getPool()), 6);
+        char *idc = new (c->borrowFromPool(sizeof(char[11]))) char[11];
+        sprintf(idc, "%d", USER_ID);
+        param_tmp->setVal(idc, strlen(idc));
+        msg->addParam(param_tmp);
+        param_tmp = nullptr;
+    }
+    e = c->send(msg);
+    if (e != FxChatError::FXM_SUCCESS) { // send fail
+        qDebug() << "SEND FAIL!" << e;
+        c->clearPool();
+        c->unlock();
+        return e;
+    }
+    FxMessage *recvMsg;
+    e = c->receive(recvMsg);
+    if (e == FxChatError::FXM_SUCCESS) {
+        // convert userlist json to vector
+        const FxMessageParam *p = recvMsg->paramList();
+        if (strcmp(p->getName(c->getPool()), "userlist") != 0) { // error
+
+        } else {
+            v = new QVector<uint32_t>();
+            const char *userlist = p->getVal(c->getPool());
+            QJsonDocument json = QJsonDocument::fromJson(userlist);
+            QJsonArray arr = json.array();
+            for (int i = 0; i < arr.size(); i++) {
+                v->append(arr.at(i).toInt());
+            }
+        }
+    } else {
+        qDebug() << "RECEIVE FAIL!" << e;
+        c->clearPool();
+        c->unlock();
+        return e;
+    }
+    c->clearPool();
+    c->unlock();
+    return e;
+}
 
 User *FxClient::getUserInfo(const uint32_t userid) {
     return ClientDB::getUserById(userid);
@@ -230,6 +280,14 @@ FxChatError FxClient::getChatLog(const uint32_t target_id) {
 FxChatError FxClient::sendMsg(const uint32_t to_user_id, const QString &messagebody) {
     qDebug() << "sendMsg()";
     FxChatError e = FxChatError::FXM_SUCCESS;
+    ChatLog l;
+    l.source_id(USER_ID);
+    l.target_id(to_user_id);
+    l.type(ChatLog::SEND);
+    l.msg(messagebody);
+    if (!ClientDB::addLog(l)) {
+        qDebug() << "call ClientDB::addLog(l) fail!";
+    }
     FxConnection *c = FxConnection::getServerConnection();
     c->lock();
     FxMessage *msg = new (c->borrowFromPool(sizeof(FxMessage))) FxMessage();
@@ -310,7 +368,7 @@ bool FxClient::stopListenMsg() {
         return false;
     else {
         _lt->terminate();
-        _lt->wait();
+        _lt->wait(1000);
         delete _lt;
         _lt = nullptr;
         return true;
@@ -332,7 +390,7 @@ bool FxClient::stopHeartBeat() {
         return false;
     else {
         _ht->terminate();
-        _lt->wait();
+        _lt->wait(1000);
         delete _ht;
         _ht = nullptr;
         return true;
@@ -388,8 +446,18 @@ void ListenThread::run() {
                     _set_to_msg_pack(pack, param_list->getName(sc->getPool()), param_list->getVal(sc->getPool()));
                     param_list = param_list->_next;
                 }
-
-                this->_client->receiveMsg(pack->userid, pack->toid, QString(pack->body));
+                QString msgbody = QString(pack->body);
+                { // chatlog
+                    ChatLog l;
+                    l.source_id(FxClient::USER_ID);
+                    l.target_id(pack->userid);
+                    l.type(ChatLog::RECIEVE);
+                    l.msg(msgbody);
+                    if (!ClientDB::addLog(l)) {
+                        qDebug() << "CALL ClientDB::addLog(l) fail!";
+                    }
+                }
+                this->_client->receiveMsg(pack->userid, pack->toid, msgbody);
                 break;
             }
             case FXF_ToOnline: {

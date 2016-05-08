@@ -14,6 +14,7 @@ namespace FxChat {
 class FxClient : public QObject {
     Q_OBJECT
 public:
+    static uint32_t USER_ID;
     static FxClient *getInstance();
     static void quitApplication();
 
@@ -21,6 +22,9 @@ public:
 
     // update db from server, return from db
     static FxChatError getUserList(QMap<uint32_t, User> *&v);
+
+    // get Online
+    static FxChatError getOnline(QVector<uint32_t> *&v);
 
     // return from db
     static User *getUserInfo(const uint32_t userid = USER_ID);
@@ -47,7 +51,6 @@ public:
 private:
     static FxClient *_instance;
 
-    static uint32_t USER_ID;
     FxClient();
 public slots:
 

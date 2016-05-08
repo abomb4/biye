@@ -7,7 +7,8 @@
 #include "usermanager.h"
 #include "usersession.h"
 #include "fxcjson.h"
-
+#include "linearmemorypool.h"
+void dummy(){}
 namespace FxChat {
 namespace FxServer{
 
@@ -124,6 +125,60 @@ void _set_to_login_pack(login_pack *&pack, const char *name, const char *val) {
         pack->password = val;
 }
 
+void ___sendmsg(ClientConnection *c, const FxMessage *msg) {
+    c->lock();
+    c->sendMsg(msg);
+    c->pool()->clear();
+    c->unlock();
+}
+
+FxChatError _change_online(uint32_t userid, bool online) {
+    std::vector<ClientConnection*> *cs = UserSession::getAllOnlineConnections();
+    std::vector<ClientConnection*>::iterator it = cs->begin();
+    LinearMemoryPool *pool = new LinearMemoryPool(1024);
+    // make msg
+    FxMessage *msg = new (pool->borrow(sizeof(FxMessage))) FxMessage();
+    if (online) {
+        msg->fno(FXF_ToOnline);
+    } else {
+        msg->fno(FXF_ToOffline);
+    }
+    FxMessageParam *p = new (pool->borrow(sizeof(FxMessageParam))) FxMessageParam();
+    char *name = pool->borrow(7);
+    strcpy(name, "userid");
+    p->setName(name, 6);
+    char *val = pool->borrow(11);
+    sprintf(val, "%d", userid);
+    p->setVal(val, strlen(val));
+    msg->addParam(p);
+
+    int size = cs->size();
+    std::thread *threads = new (pool->borrow(size * sizeof(std::thread))) std::thread[size];
+    int i = 0;
+    while(it != cs->end()) {
+        if (UserSession::getSessionBySockFd((*it)->sockfd())->user().id() == userid)
+            threads[i++] = std::thread([=] { dummy(); });
+        else
+            threads[i++] = std::thread([=] { ___sendmsg(*it, msg); });
+        it++;
+    }
+    for (i = 0; i < size; i++) {
+        threads[i].join();
+    }
+    delete pool;
+    delete cs;
+    return FXM_SUCCESS;
+}
+
+
+void notifyOnline(uint32_t userid) {
+    _change_online(userid, true);
+}
+
+void notifyOffline(uint32_t userid) {
+    _change_online(userid, false);
+}
+
 FxChatError _login(FxMessage *&retmsg, const FxMessage *msg, ClientConnection *c) {
     _logger()->info("({}) do login", (void*)c);
     MemoryPool *pool = c->pool();
@@ -237,7 +292,27 @@ FxChatError _get_department_list_diff(FxMessage *&retmsg, const FxMessage *msg, 
 
 ///////////////////////////////////// GetOnlineUsers
 FxChatError _get_online_users(FxMessage *&retmsg, const FxMessage *msg, ClientConnection *c) {
+    _logger()->info("({}) get online users", (void*)c);
+    std::vector<uint32_t> *v = UserSession::getOnlineList();
+    cJSON_set_pool(c->pool());
+    cJSON *array = cJSON_CreateArray();
+    for (std::vector<uint32_t>::iterator it = v->begin(); it != v->end(); it++) {
+        cJSON_AddItemToArray(array, cJSON_CreateNumber(*it));
+    }
+    char *liststr = cJSON_PrintUnformatted(array);
+    retmsg = new (c->pool()->borrow(sizeof(FxMessage))) FxMessage();
+    FxMessageParam *param;
+    // deal with userlist
+    {
+        param = new (c->pool()->borrow(sizeof(FxMessageParam))) FxMessageParam();
+        param->setName("userlist", 8);
+        param->setVal(liststr, strlen(liststr));
+        retmsg->addParam(param);
+        param = nullptr;
+    }
 
+    delete v;
+    _logger()->info("({}) get online users finish", (void*)c);
     return FxChatError::FXM_SUCCESS;
 }
 // GetOnlineUsers end

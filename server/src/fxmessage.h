@@ -19,7 +19,7 @@ enum FxFunction : uint16_t {
     FXF_GetOnlineUsers = 6,
     FXF_GetUserDetail = 7,
     FXF_SendMessage = 8, // server notify and client request
-    FXF_GetOnline = 9,
+    // FXF_GetOnline = 9,
     FXF_ToOnline = 10, // server notify
     FXF_ToOffline = 11 // server notify
 };

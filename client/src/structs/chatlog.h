@@ -6,7 +6,9 @@
 
 class ChatLog {
 public:
-    ChatLog() : _id(0), _sourceid(0), _targetid(0), _type(0) {}
+    ChatLog() : _id(0), _sourceid(0), _targetid(0), _type(SEND) {}
+
+    enum Type : short { SEND = 1, RECIEVE = 2 };
 
     uint32_t id() const { return this->_id; }
     void id(const uint32_t n) { this->_id = n; }
@@ -17,8 +19,8 @@ public:
     uint32_t target_id() const { return this->_targetid; }
     void target_id(const uint32_t n) { this->_targetid = n; }
 
-    char type() const { return this->_type; }
-    void type(const char n) { this->_type = n; }
+    Type type() const { return this->_type; }
+    void type(Type n) { this->_type = n; }
 
     const QString& msg() const { return this->_msg; }
     void msg(const QString n) { this->_msg = n; }
@@ -29,7 +31,7 @@ private:
     uint32_t _id;
     uint32_t _sourceid;
     uint32_t _targetid;
-    char _type; // 1 send 2 receive
+    Type _type; // 1 send 2 receive
     QString _msg;
     QDateTime _gmtcreate;
 };

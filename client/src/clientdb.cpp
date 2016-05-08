@@ -169,7 +169,21 @@ QVector<ChatLog> *ClientDB::getLogs(uint32_t userid) {}
 uint32_t ClientDB::getLogSum(uint32_t userid) {}
 QVector<ChatLog> *ClientDB::getLogsPage(uint32_t userid, uint32_t pagesize, uint32_t pageno) {}
 QVector<ChatLog> *ClientDB::getLogsDateTime(uint32_t userid, const QDateTime start, const QDateTime end) {}
-bool ClientDB::addLog(const ChatLog l) {}
+bool ClientDB::addLog(const ChatLog l) {
+    QSqlQuery q;
+    q.prepare("insert into fx_chatlog(sourceid, targetid, type, msg, gmt_create) "
+            "values (?, ?, ?, ?, date())");
+
+    q.addBindValue(l.source_id());
+    q.addBindValue(l.target_id());
+    q.addBindValue(l.type());
+    q.addBindValue(l.msg());
+    bool r;
+    if (!(r = q.exec()))
+        qDebug() << "ClientDB add chatlog FAIL!" << q.lastError();
+    return r;
+
+}
 
 ///////////////////////// department /////////////////////////
 QVector<Department> ClientDB::getDepartments() {}

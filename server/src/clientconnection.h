@@ -1,6 +1,7 @@
 #ifndef CLIENTCONNECTION_H
 #define CLIENTCONNECTION_H
 
+#include <sys/socket.h>
 #include <iostream>
 #include <thread> // C++11
 
@@ -16,6 +17,11 @@ class ClientConnection
 public:
     ClientConnection(int sockfd, int poolsize, char *poolObjMemory);
     ~ClientConnection();
+
+    void closeSocket() {
+        _logger->info("({}) close socket {}", (void*)this, this->_sockfd);
+        shutdown(this->_sockfd, SHUT_RDWR);
+    }
 
     void setRestoreFunc(void (*func)(char *));
 

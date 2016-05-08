@@ -22,6 +22,9 @@ MainWindow::~MainWindow() {
 }
 
 //
+
+
+QVector<uint32_t> *___tmp_online_user_vector;
 void MainWindow::initData() {
     FxClient *c = FxClient::getInstance();
     // TODO 1 get all user list from db
@@ -35,7 +38,10 @@ void MainWindow::initData() {
     //      3 get recent list from db
     e = FxChat::FxClient::getRecent(this->_recent);
     //      4 get online list from server
-
+    e = FxChat::FxClient::getOnline(___tmp_online_user_vector);
+    if (e != FXM_SUCCESS) {
+        qDebug() << "GetOnline FAIL!!" << e;
+    }
     //      5 connect server side positive message slot
     connect(c, SIGNAL(receiveMsg(quint32,quint32,QString)),
             this, SLOT(receiveMsg(quint32,quint32,QString)),
@@ -65,7 +71,10 @@ void MainWindow::initUi() {
             c->toOnline();
             w = c->createWidget();
             ui->c_self->layout()->addWidget(w);
+            continue;
         }
+        if (___tmp_online_user_vector->contains(i->id()))
+            c->toOnline();
         // add to all list
         w = c->createWidget();
         QListWidgetItem *item = new QListWidgetItem(ui->list_recent);
@@ -85,7 +94,8 @@ void MainWindow::initUi() {
 
     connect(ui->list_department, SIGNAL(itemDoubleClicked(QListWidgetItem*)), this, SLOT(openChatWindow(QListWidgetItem*)));
     connect(ui->list_recent, SIGNAL(itemDoubleClicked(QListWidgetItem*)), this, SLOT(openChatWindow(QListWidgetItem*)));
-    // 2 refresh online
+
+    delete ___tmp_online_user_vector;
 }
 
 void MainWindow::closeEvent(QCloseEvent *event) {

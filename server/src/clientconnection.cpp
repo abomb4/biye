@@ -40,8 +40,9 @@ ClientConnection::ClientConnection(int sockfd, int poolsize, char *poolObjMemory
 
 ClientConnection::~ClientConnection() {
     ClientConnection::_logger->info("({}) A connection destoried.", (void*)this);
-    this->_listener_t.detach();
-    UserSession::destroySessionBySockFd(this->_sockfd, false);
+    //UserSession::destroySessionBySockFd(this->_sockfd, false); // TODO this may be unexpected disconnection
+    UserSession::connectionDisconnected(this->_sockfd);
+    this->_listener_t.~thread();
     close(this->_sockfd);
     // CANNOT DELETE BECAUSE OF BLOCKEDMEMORYPOOL
     LinearMemoryPool *_free = (LinearMemoryPool *)this->_pool;
@@ -58,6 +59,7 @@ void ClientConnection::setRestoreFunc(void (*func)(char *)) {
 
 void ClientConnection::startListener() {
     this->_listener_t = std::thread([=] { _doListen(); });
+    this->_listener_t.detach();
 }
 
 void ClientConnection::_doListen() {
@@ -71,9 +73,11 @@ void ClientConnection::_doListen() {
         this->_send_mutex.lock(); // LOCK
         if (n < 0) {
             ClientConnection::_logger->error("({}) ERROR reading from socket", (void*)this);
+            this->unlock();
             break;
         } else if (n == 0) {
             ClientConnection::_logger->info("({}) client closes connection", (void*)this);
+            this->unlock();
             break;
         }
         FxMessage *returnMsg = nullptr;
@@ -88,6 +92,7 @@ void ClientConnection::_doListen() {
             FxChatError err = this->_doRead(bodystr, bodylength, fno);
             if (err != FxChatError::FXM_SUCCESS) { // wrong
                 if (err == FxChatError::FXM_SOCKET_ERR) {
+                    this->unlock();
                     this->~ClientConnection();
                     return;
                 }
