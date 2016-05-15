@@ -65,3 +65,7 @@ target_link_libraries (fxserver libFxServer)
 # utils
 add_subdirectory(fxutils)
 # target_link_libraries(fxserver fxutils)
+
+# install
+install(TARGETS fxserver DESTINATION /usr/local/bin)
+install(FILES default.cfg DESTINATION /etc)
