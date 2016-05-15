@@ -68,4 +68,4 @@ add_subdirectory(fxutils)
 
 # install
 install(TARGETS fxserver DESTINATION /usr/local/bin)
-install(FILES default.cfg DESTINATION /etc)
+install(FILES default.cfg RENAME fxserver.cfg DESTINATION /etc)

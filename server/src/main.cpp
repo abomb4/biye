@@ -153,7 +153,7 @@ int main(int argc, char *argv[])
         }
 
         // load config
-        Config::load("/home/x4x/Workspace/biye/server/src/default.cfg");
+        Config::load("/etc/fxserver.cfg");
         // regist loggers
         registLoggers();
         // init UserSession::_pool

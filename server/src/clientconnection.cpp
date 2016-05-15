@@ -74,16 +74,23 @@ void ClientConnection::_doListen() {
         if (n < 0) {
             ClientConnection::_logger->error("({}) ERROR reading from socket", (void*)this);
             this->unlock();
-            break;
+            this->~ClientConnection();
+            return;
         } else if (n == 0) {
             ClientConnection::_logger->info("({}) client closes connection", (void*)this);
             this->unlock();
-            break;
+            this->~ClientConnection();
+            return;
         }
         FxMessage *returnMsg = nullptr;
         // less than 8Byte message
         if (n < 8) {
+            recv(this->_sockfd, buffer, 8, 0);
             FxServer::makeFailureMsg(returnMsg, FxChatError::FXM_MSG_TOO_SHORT, this->_pool, 0);
+            this->_doSend(returnMsg);
+            this->_send_mutex.unlock();
+            this->~ClientConnection();
+            return;
         } else { // normal
             FxMessage *recieveMsg = nullptr;
             char *bodystr;
